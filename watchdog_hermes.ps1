@@ -42,7 +42,9 @@ function Write-WatchdogLog {
     $line = "$timestamp [$Level] $Message"
     Add-Content -Path "$LogDir\watchdog_$(Get-Date -Format 'yyyy-MM-dd').log" -Value $line
     if ($Level -eq "WARN" -or $Level -eq "ERROR") {
-        Write-Host $line -ForegroundColor ($Level -eq "ERROR" ? "Red" : "Yellow")
+        $color = "Red"
+        if ($Level -eq "WARN") { $color = "Yellow" }
+        Write-Host $line -ForegroundColor $color
     }
 }
 
@@ -55,7 +57,7 @@ function Get-HermesProcess {
         $procs = Get-Process -Name "node" -ErrorAction SilentlyContinue
         foreach ($p in $procs) {
             try {
-                $cmdLine = (Get-CimInstance -ClassName Win32_Process -Filter "ProcessId = $($p.Id)").CommandLine
+                $cmdLine = (Get-WmiObject -Class Win32_Process -Filter "ProcessId = $($p.Id)").CommandLine
                 if ($cmdLine -match "hermes") {
                     return $p
                 }
@@ -63,6 +65,14 @@ function Get-HermesProcess {
         }
     } catch {}
     return $null
+}
+
+function Get-ProcessCPU {
+    param([System.Diagnostics.Process]$Process)
+    try {
+        $perf = Get-WmiObject -Class Win32_PerfRawData_PerfProc_Process -Filter "IDProcess = $($Process.Id)"
+        if ($perf) { return $perf.PercentProcessorTime } else { return 0 }
+    } catch { return 0 }
 }
 
 function Get-LastToolCall {
@@ -229,7 +239,7 @@ while ($true) {
         
         # ── 3. CHECK: Processo zumbi (CPU = 0% por muito tempo)? ──
         try {
-            $cpu = $proc.CPU
+            $cpu = Get-ProcessCPU $proc
             $runtime = ($now - $proc.StartTime).TotalMinutes
             if ($runtime -gt 5 -and $cpu -lt 0.1) {
                 # Processo rodando há 5+ min mas sem uso de CPU — congelado
@@ -242,10 +252,13 @@ while ($true) {
         
         # ── Tudo OK ──
         Save-WatchdogState -Status "healthy" -LastAction "monitoring"
-        Write-WatchdogLog "✓ Hermes OK (PID=$($proc.Id), running=$($proc.StartTime))" -Level "INFO"
+        $pidStr = $proc.Id
+        $startStr = $proc.StartTime.ToString("HH:mm:ss")
+        Write-WatchdogLog ("OK Hermes running PID=" + $pidStr + " since " + $startStr)
         
     } catch {
-        Write-WatchdogLog "Erro no watchdog loop: $_" -Level "ERROR"
+        $errMsg = $_.Exception.Message
+        Write-WatchdogLog ("Erro no watchdog loop: " + $errMsg)
     }
     
     Start-Sleep -Seconds $IntervalSeconds
