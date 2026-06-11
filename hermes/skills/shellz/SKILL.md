@@ -122,3 +122,33 @@ nomic-embed-text     → embeddings
 - Ollama inicia automaticamente via atalho na pasta Startup
 - VBS launcher invisível: `D:\projetos\hermes-watchdog\ollama_invisible.vbs`
 - Watchdog guardian monitora e reinicia se cair
+
+## Controles do Usuário — Pausar/Retomar
+
+O usuário pode pausar o Ollama a qualquer momento para liberar GPU para jogos ou outras tarefas.
+
+### 🎮 Pausar (liberar GPU)
+```
+Duas formas:
+1. Atalho na Desktop: "🐚 Shellz Pausar"
+2. Comando: D:\projetos\hermes-watchdog\shellz_pausar.bat
+```
+O que faz:
+- Para o processo ollama.exe
+- Libera memória GPU via nvidia-smi --gpu-reset
+- Cria arquivo `.shellz_paused` (watchdog não reinicia)
+
+### ▶️ Retomar (reativar Shell 1)
+```
+Duas formas:
+1. Atalho na Desktop: "🐚 Shellz Retomar"  
+2. Comando: D:\projetos\hermes-watchdog\shellz_retomar.bat
+```
+O que faz:
+- Inicia Ollama via VBS (invisível)
+- Aguarda até ficar pronto (verifica /api/version)
+- Remove arquivo `.shellz_paused`
+
+### Integração com Watchdog
+- Se `.shellz_paused` existir → guardian NÃO reinicia o Ollama
+- Se `.shellz_paused` NÃO existir e Ollama cair → guardian reinicia normalmente

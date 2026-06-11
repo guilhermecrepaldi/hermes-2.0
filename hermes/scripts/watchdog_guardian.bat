@@ -20,6 +20,16 @@ if errorlevel 1 (
     )
 )
 
+REM Verificar Ollama - mas apenas se NAO estiver pausado pelo usuario
+if not exist "%USERPROFILE%\.shellz_paused" (
+    tasklist /FI "IMAGENAME eq ollama.exe" /NH 2>nul | find /I "ollama.exe" >nul
+    if errorlevel 1 (
+        REM Ollama NAO esta rodando - reiniciar
+        wscript.exe /B "D:\projetos\hermes-watchdog\ollama_invisible.vbs"
+        echo [%date% %time%] [GUARDIAN] Ollama reiniciado (nao estava rodando). >> "%WATCHLOG%"
+    )
+)
+
 REM Recriar atalho de startup se foi deletado (agora usando VBS invisivel)
 if not exist "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\HermesWatchdog.lnk" (
     powershell -NoProfile -Command ^
