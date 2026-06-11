@@ -1,63 +1,71 @@
 {
-  "timestamp": "2026-06-11T16:13:34.964882",
-  "edition": "?",
-  "cards_scanned": 74,
-  "new_skills": 11,
+  "timestamp": "2026-06-11T17:30:00.000000",
+  "edition": "002",
+  "cards_scanned": 45,
+  "new_skills": 4,
   "findings": [
     {
-      "tech": "langchain",
-      "title": "NVIDIA Blackwell Ultra Entrega 50x Performance para IA Ag\u00eantica",
-      "confidence": "medium"
+      "tech": "headroom",
+      "title": "headroom: Compressão de Tool Output para LLM — 60-95% Menos Tokens, Mesmas Respostas",
+      "confidence": "high",
+      "skill_created": true,
+      "reason": "Open-source library for compressing tool outputs/RAG chunks before sending to LLMs. Saves context window space and API costs. pip install headroom."
     },
     {
-      "tech": "crewai",
-      "title": "NVIDIA Blackwell Ultra Entrega 50x Performance para IA Ag\u00eantica",
-      "confidence": "medium"
+      "tech": "vibevoice",
+      "title": "microsoft/VibeVoice: Voz Sintética de Fronteira em Código Aberto — Concorrente do ElevenLabs?",
+      "confidence": "high",
+      "skill_created": true,
+      "reason": "Microsoft open-source TTS system with emotion, voice cloning, multi-language. Can replace Edge TTS in Hermes with local execution."
     },
     {
-      "tech": "diffusiongemma",
-      "title": "DiffusionGemma: Gera\u00e7\u00e3o de Texto 4x Mais R\u00e1pida com Modelos de Difus\u00e3o Acelerado",
-      "confidence": "high"
+      "tech": "agent-reach",
+      "title": "Agent-Reach: CLI sem API Fees para Ler e Buscar Twitter, Reddit, YouTube e GitHub",
+      "confidence": "high",
+      "skill_created": true,
+      "reason": "CLI for AI agents to access social media via web scraping without paid APIs. Perfect for Hermes research agents."
     },
     {
-      "tech": "vllm",
-      "title": "ReasonAlloc: Aloca\u00e7\u00e3o Hier\u00e1rquica de KV Cache Reduz Uso de Mem\u00f3ria em 60%",
-      "confidence": "medium"
-    },
-    {
-      "tech": "opencv",
-      "title": "OpenCV 5 Chegou: O Maior Salto em Anos para Vis\u00e3o Computacional com CUDA Nativo",
-      "confidence": "high"
-    },
-    {
-      "tech": "apache-burr",
-      "title": "Apache Burr: Framework Open-Source para Agentes de IA Confi\u00e1veis e Audit\u00e1veis",
-      "confidence": "medium"
-    },
-    {
-      "tech": "cohere",
-      "title": "Cohere Abre o C\u00f3digo de Agente de Programa\u00e7\u00e3o de 30B que Roda em uma \u00danica H100",
-      "confidence": "high"
-    },
-    {
-      "tech": "huggingface",
-      "title": "Open Reproduction of DeepSeek-R1: Reprodu\u00e7\u00e3o Aberta do Modelo de Racioc\u00ednio que ",
-      "confidence": "medium"
+      "tech": "mempalace",
+      "title": "MemPalace: Sistema de Memória Open-Source com Melhores Benchmarks para Agentes de IA",
+      "confidence": "high",
+      "skill_created": true,
+      "reason": "Open-source memory system for agents with vector store, hierarchical summarization, and intelligent caching. Top benchmarks."
     },
     {
       "tech": "projectmem",
-      "title": "PROJECTMEM: Camada de Mem\u00f3ria Local com Event Sourcing para Agentes de C\u00f3digo",
-      "confidence": "high"
+      "title": "PROJECTMEM: Camada de Memória Local com Event Sourcing para Agentes de Código",
+      "confidence": "medium",
+      "skill_created": false,
+      "reason": "Design pattern for event-sourced agent memory. Currently covered by mempalace skill which offers more complete implementation."
     },
     {
-      "tech": "nemo",
-      "title": "NVIDIA NemoClaw: Engenheiros de Software Aut\u00f4nomos e Seguros para Ind\u00fastria com ",
-      "confidence": "high"
+      "tech": "open-r1",
+      "title": "Open Reproduction of DeepSeek-R1: Reprodução Aberta do Modelo de Raciocínio",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "HuggingFace open-r1 reproduction. Training-oriented. Not directly implementable as a Hermes skill but valuable for ML research."
     },
     {
-      "tech": "mcp",
-      "title": "headroom: Compress\u00e3o de Tool Output para LLM \u2014 60-95% Menos Tokens, Mesmas Respo",
-      "confidence": "medium"
+      "tech": "open-notebook",
+      "title": "open-notebook: Implementação Open-Source do NotebookLM com Mais Flexibilidade",
+      "confidence": "medium",
+      "skill_created": false,
+      "reason": "Local document analysis tool. Useful but overlaps with existing RAG capabilities."
+    },
+    {
+      "tech": "openenv",
+      "title": "OpenEnv: Ambiente Open-Source para Aprendizado por Reforço de Agentes",
+      "confidence": "medium",
+      "skill_created": false,
+      "reason": "RL environment for agent training. Training-oriented, less relevant for inference-side Hermes improvements."
+    },
+    {
+      "tech": "taste-skill",
+      "title": "last30days-skill and taste-skill: Ferramentas para Agentes de IA Mais Inteligentes e com Estilo",
+      "confidence": "medium",
+      "skill_created": false,
+      "reason": "Overlaps with existing 'humanizer' skill (removes AI-isms from text). Different approach (few-shot prompting)."
     }
   ]
 }
