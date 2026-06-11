@@ -78,6 +78,20 @@ if exist "%USERPROFILE%\.shellz_paused" del "%USERPROFILE%\.shellz_paused"
 timeout /t 2 /nobreak >nul
 goto :menu
 
+REM === CHECK_STATUS (chamado no menu principal - linha unica) ===
+:check_status
+tasklist /FI "IMAGENAME eq ollama.exe" /NH 2>nul | find /I "ollama.exe" >nul
+if errorlevel 1 (
+    if exist "%USERPROFILE%\.shellz_paused" (
+        echo     🟠 PAUSADO (GPU livre para jogos)
+    ) else (
+        echo     ⛔ PARADO
+    )
+) else (
+    echo     🟢 RODANDO
+)
+goto :eof
+
 :status
 cls
 echo ============================================================
@@ -95,9 +109,13 @@ echo.
 tasklist /FI "IMAGENAME eq powershell.exe" 2>nul | find "shellz_tray" >nul
 if errorlevel 1 (echo  Tray Icon:           ⛔ FECHADO) else (echo  Tray Icon:           🟢 ATIVO)
 echo.
-echo  Watchdog:            🟢 Ativo (cron 1min)
-echo  GPU:                 Aguardando nvidia-smi...
-for /f "tokens=2 delims=:" %%a in ('nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2^>nul') do echo                        %%a%% utilizada
+echo  Watchdog:            🟢 Ativo (pythonw, zero janelas)
+where nvidia-smi >nul 2>&1
+if not errorlevel 1 (
+    for /f "tokens=2 delims=:" %%a in ('nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2^>nul') do echo  GPU:                 %%a%% utilizada
+) else (
+    echo  GPU:                 N/A (driver NVIDIA nao detectado)
+)
 echo.
 echo  Modelo carregado:    qwen2.5-coder:7b (4.7GB)
 echo  GitHub:              github.com/guilhermecrepaldi/hermes-2.0
