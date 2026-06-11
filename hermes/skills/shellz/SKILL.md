@@ -120,8 +120,41 @@ nomic-embed-text     → embeddings
 
 ## Auto-Start
 - Ollama inicia automaticamente via atalho na pasta Startup
-- VBS launcher invisível: `D:\projetos\hermes-watchdog\ollama_invisible.vbs`
+- VBS launcher invisível: `D:\\projetos\\hermes-watchdog\\ollama_invisible.vbs`
 - Watchdog guardian monitora e reinicia se cair
+- Shellz Tray Icon inicia junto (atalho Startup: `ShellzTray.lnk`)
+
+## Shellz Tray Icon (ícone na bandeja do Windows)
+
+O ícone na bandeja do sistema (ao lado do relógio) permite controlar o Ollama sem abrir janelas.
+
+### Estado visual do ícone
+| Cor | Estado | Significado |
+|-----|--------|-------------|
+| 🟢 **Verde** | Rodando | Ollama ativo, Shell 1 disponível |
+| 🟠 **Laranja** | Pausado | GPU livre para jogos |
+| ⚫ **Cinza** | Parado | Ollama não está rodando |
+
+### Interações
+| Ação | Resultado |
+|------|-----------|
+| 🖱️ **Clique esquerdo** | Toggle Pausar/Retomar (alterna entre 🟢 e 🟠) |
+| 🖱️ **Clique direito** | Menu: Pausar, Retomar, Ver Status, Sair |
+| 🔔 **Balloon notification** | Notificação ao pausar/retomar |
+
+### Arquivos
+| Arquivo | Função |
+|---------|--------|
+| `D:\\projetos\\hermes-watchdog\\shellz_tray.ps1` | Script PowerShell do tray icon |
+| `D:\\projetos\\hermes-watchdog\\shellz_tray.vbs` | Launcher VBS (invisível) para o PowerShell |
+| `D:\\projetos\\hermes-watchdog\\create_tray_shortcuts.ps1` | Cria atalhos Startup + Desktop |
+| `%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\ShellzTray.lnk` | Auto-start no login |
+
+### Recriação de atalhos
+Se os atalhos forem deletados, execute:
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "D:\\projetos\\hermes-watchdog\\create_tray_shortcuts.ps1"
+```
 
 ## Controles do Usuário — Pausar/Retomar
 
