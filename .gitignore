@@ -1,0 +1,13 @@
+# Sensitive data
+*.key
+*.pem
+.env
+.env.*
+config.yaml
+*.log
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+*.bak
+node_modules/
