@@ -1,71 +1,169 @@
 {
-  "timestamp": "2026-06-11T17:30:00.000000",
-  "edition": "002",
-  "cards_scanned": 45,
+  "timestamp": "2026-06-12T19:15:00.000000",
+  "edition": "003",
+  "cards_scanned": 115,
   "new_skills": 4,
   "findings": [
     {
-      "tech": "headroom",
-      "title": "headroom: Compressão de Tool Output para LLM — 60-95% Menos Tokens, Mesmas Respostas",
+      "tech": "serge-code-review",
+      "title": "Serge: Revisão de Código com IA Nativa do GitHub — HuggingFace Lança Ferramenta Open-Source para PRs",
       "confidence": "high",
       "skill_created": true,
-      "reason": "Open-source library for compressing tool outputs/RAG chunks before sending to LLMs. Saves context window space and API costs. pip install headroom."
+      "reason": "HuggingFace open-source AI code review tool for GitHub PRs. Automated bug detection, style checks, and security analysis. Complements existing github-code-review skill."
+    },
+    {
+      "tech": "open-llm-vtuber",
+      "title": "Open-LLM-VTuber: Fale com Qualquer LLM com Voz, Interrupção e Avatar 3D em Tempo Real",
+      "confidence": "high",
+      "skill_created": true,
+      "reason": "Open-source voice interaction platform supporting any LLM, interruption, Live2D avatar, emotion TTS. Full local execution. Reference architecture for Hermes voice pipeline."
+    },
+    {
+      "tech": "nemotron-35-asr",
+      "title": "NVIDIA Nemotron 3.5 ASR: Fine-Tuning para Reconhecimento de Fala Multilíngue",
+      "confidence": "high",
+      "skill_created": true,
+      "reason": "NVIDIA open-source ASR model fine-tunable with ~10 hours of audio. Multilingual, local execution. Alternative to Whisper/Google STT for Hermes voice pipeline."
+    },
+    {
+      "tech": "minimax-m3",
+      "title": "MiniMax M3: Atenção Esparsa Supera Modelos Maiores em Eficiência — Nova Arquitetura para a Era de Agentes",
+      "confidence": "medium",
+      "skill_created": true,
+      "reason": "Open-source sparse attention LLM with O(n) context scaling vs O(n²) in traditional transformers. Beats GPT-4 in efficiency. Model accessible via HuggingFace."
+    },
+    {
+      "tech": "headroom",
+      "title": "headroom: Compressão de Tool Output para LLM — Edições #002-#003",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill. Confirmed as existing."
     },
     {
       "tech": "vibevoice",
-      "title": "microsoft/VibeVoice: Voz Sintética de Fronteira em Código Aberto — Concorrente do ElevenLabs?",
+      "title": "Microsoft VibeVoice — Edições #002-#003",
       "confidence": "high",
-      "skill_created": true,
-      "reason": "Microsoft open-source TTS system with emotion, voice cloning, multi-language. Can replace Edge TTS in Hermes with local execution."
+      "skill_created": false,
+      "reason": "Already has skill (vibevoice). Confirmed as existing."
     },
     {
       "tech": "agent-reach",
-      "title": "Agent-Reach: CLI sem API Fees para Ler e Buscar Twitter, Reddit, YouTube e GitHub",
+      "title": "Agent-Reach — Edição #002",
       "confidence": "high",
-      "skill_created": true,
-      "reason": "CLI for AI agents to access social media via web scraping without paid APIs. Perfect for Hermes research agents."
+      "skill_created": false,
+      "reason": "Already has skill (agent-reach). Confirmed as existing."
     },
     {
       "tech": "mempalace",
-      "title": "MemPalace: Sistema de Memória Open-Source com Melhores Benchmarks para Agentes de IA",
-      "confidence": "high",
-      "skill_created": true,
-      "reason": "Open-source memory system for agents with vector store, hierarchical summarization, and intelligent caching. Top benchmarks."
-    },
-    {
-      "tech": "projectmem",
-      "title": "PROJECTMEM: Camada de Memória Local com Event Sourcing para Agentes de Código",
-      "confidence": "medium",
-      "skill_created": false,
-      "reason": "Design pattern for event-sourced agent memory. Currently covered by mempalace skill which offers more complete implementation."
-    },
-    {
-      "tech": "open-r1",
-      "title": "Open Reproduction of DeepSeek-R1: Reprodução Aberta do Modelo de Raciocínio",
+      "title": "MemPalace — Edição #002",
       "confidence": "high",
       "skill_created": false,
-      "reason": "HuggingFace open-r1 reproduction. Training-oriented. Not directly implementable as a Hermes skill but valuable for ML research."
+      "reason": "Already has skill (mempalace). Confirmed as existing."
     },
     {
       "tech": "open-notebook",
-      "title": "open-notebook: Implementação Open-Source do NotebookLM com Mais Flexibilidade",
-      "confidence": "medium",
+      "title": "open-notebook: NotebookLM Open-Source — Edição #002",
+      "confidence": "high",
       "skill_created": false,
-      "reason": "Local document analysis tool. Useful but overlaps with existing RAG capabilities."
+      "reason": "Already has skill (open-notebook under research). Confirmed."
     },
     {
       "tech": "openenv",
-      "title": "OpenEnv: Ambiente Open-Source para Aprendizado por Reforço de Agentes",
+      "title": "OpenEnv: RL para Agentes — Edição #002",
       "confidence": "medium",
       "skill_created": false,
-      "reason": "RL environment for agent training. Training-oriented, less relevant for inference-side Hermes improvements."
+      "reason": "Already has skill (openenv). Confirmed."
     },
     {
       "tech": "taste-skill",
-      "title": "last30days-skill and taste-skill: Ferramentas para Agentes de IA Mais Inteligentes e com Estilo",
+      "title": "taste-skill — Edição #002",
       "confidence": "medium",
       "skill_created": false,
-      "reason": "Overlaps with existing 'humanizer' skill (removes AI-isms from text). Different approach (few-shot prompting)."
+      "reason": "Already has skill (taste-skill). Confirmed."
+    },
+    {
+      "tech": "harness-1",
+      "title": "Harness-1: Agente de Busca — Edição #001",
+      "confidence": "medium",
+      "skill_created": false,
+      "reason": "Already has skill (harness-1 under research). Confirmed."
+    },
+    {
+      "tech": "diffusiongemma",
+      "title": "DiffusionGemma — Edição #001",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (diffusiongemma under mlops). Confirmed."
+    },
+    {
+      "tech": "opencv-5",
+      "title": "OpenCV 5 — Edição #001",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (opencv-5 under mlops). Confirmed."
+    },
+    {
+      "tech": "roboflow-supervision",
+      "title": "roboflow/supervision — Edição #002",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (roboflow-supervision under mlops). Confirmed."
+    },
+    {
+      "tech": "apache-burr",
+      "title": "Apache Burr — Edição #001",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (apache-burr). Confirmed."
+    },
+    {
+      "tech": "cohere-coding-agent",
+      "title": "Cohere Coding Agent — Edição #001",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (cohere-coding-agent). Confirmed."
+    },
+    {
+      "tech": "huggingface-hub",
+      "title": "hf CLI Agent-Optimized — Edição #002",
+      "confidence": "medium",
+      "skill_created": false,
+      "reason": "Already has skill (huggingface-hub). Confirmed."
+    },
+    {
+      "tech": "lerobot-humanoid",
+      "title": "LeRobot Humanoid: Robô Humanóide Impresso em 3D Open-Source — Edição #003",
+      "confidence": "low",
+      "skill_created": false,
+      "reason": "Open-source 3D-printed humanoid robot for RL research. Not applicable to Hermes (Windows-based system, no robotics hardware). Watch for future Physical AI integrations."
+    },
+    {
+      "tech": "coinbase-mcp",
+      "title": "Coinbase MCP para Agentes de IA — Edição #003",
+      "confidence": "low",
+      "skill_created": false,
+      "reason": "MCP protocol for crypto trading by AI agents. Novel but niche for Hermes ecosystem. Watch for broader MCP financial tool adoption."
+    },
+    {
+      "tech": "projectmem",
+      "title": "PROJECTMEM: Event Sourcing Memory — Edição #002",
+      "confidence": "low",
+      "skill_created": false,
+      "reason": "Paper-based design pattern. No open-source implementation. Already covered by mempalace skill conceptually."
+    },
+    {
+      "tech": "reasonalloc",
+      "title": "ReasonAlloc: KV Cache Allocation — Edição #001",
+      "confidence": "low",
+      "skill_created": false,
+      "reason": "Paper-based optimization technique for KV cache. Requires vLLM/TensorRT-LLM integration. Not independently implementable as skill."
+    },
+    {
+      "tech": "open-r1",
+      "title": "Open Reproduction DeepSeek-R1 — Edição #002",
+      "confidence": "low",
+      "skill_created": false,
+      "reason": "Training pipeline reproduction. Training-oriented. Not a Hermes skill candidate."
     }
   ]
 }
