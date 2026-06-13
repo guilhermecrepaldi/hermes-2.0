@@ -2141,6 +2141,59 @@ def _test_report(path):
 
 
 # ══════════════════════════════════════════════════════════════
+# WRAPPERS DIRETOS (evitam _import_and_run que estava quebrado)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_panorama_direct(args):
+    if not args:
+        print("Uso: panorama <path>")
+        return 1
+    from s3_headroom import project_load, project_map
+    path = args[0]
+    info = project_load(path)
+    print(f"📊 ESTRUTURA DO PROJETO")
+    print(f"  Linguagem: {info.get('language', 'N/A')}")
+    print(f"  Arquivos:  {info['files']}")
+    print(f"  Pastas:    {info['dirs']}")
+    print(f"  Linhas:    {info['lines']:,}")
+    tree = project_map(path, max_depth=2)
+    for line in tree.split('\n')[:20]:
+        print(f"  {line}")
+    return 0
+
+def cmd_compress_direct(args):
+    if not args:
+        print("Uso: compress <texto>")
+        return 1
+    from s3_headroom import context_compress
+    print(context_compress(" ".join(args)))
+    return 0
+
+def cmd_search_direct(args):
+    if len(args) < 2:
+        print("Uso: search <path> <query>")
+        return 1
+    from s3_headroom import solution_search
+    results = solution_search(args[0], " ".join(args[1:]))
+    for r in results[:5]:
+        print(f"  {r['file']}:{r['line']}")
+        print(f"    {r['snippet'][:100]}")
+    return 0
+
+def cmd_router_direct(args):
+    if not args:
+        print("Uso: router <tarefa>")
+        return 1
+    from s1_router import classify_task
+    result = classify_task(" ".join(args))
+    print(f"  Shell:    {result['shell']} ({result['model']})")
+    print(f"  Custo:    {result['cost']}")
+    print(f"  Motivo:   {result['reason']}")
+    print(f"  Scores:   S1={result['score']['S1']}  S2={result['score']['S2']}  S3={result['score']['S3']}")
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════
 # HELP
 # ══════════════════════════════════════════════════════════════
 
@@ -2168,11 +2221,11 @@ def main():
     args = sys.argv[2:]
 
     commands = {
-        'panorama': lambda a: _import_and_run('s3_headroom', 'cmd_panorama_wrapper', a),
-        'compress': lambda a: _import_and_run('s3_headroom', 'cmd_compress_wrapper', a),
-        'search': lambda a: _import_and_run('s3_headroom', 'cmd_search_wrapper', a),
+        'panorama': cmd_panorama_direct,
+        'compress': cmd_compress_direct,
+        'search': cmd_search_direct,
         'grep': cmd_grep,
-        'router': lambda a: _import_and_run('s1_router', 'cmd_router_wrapper', a),
+        'router': cmd_router_direct,
         'status': cmd_status,
         'explain': cmd_explain,
         'devtoys': cmd_devtoys,
