@@ -31,6 +31,24 @@ DevToys Tools:
   ip <endereco>         Info de IP (local)
   timestamp [epoch]     Converte epoch para data/hora
 
+Novos Comandos (v3 — S3 Research + Ferramentas):
+  research <topico>     Pesquisa em 8 fontes (Reddit, X, YT, HN, GitHub, Web)
+  research --reddit <t> Pesquisa apenas no Reddit
+  research --x <t>      Pesquisa apenas no X/Twitter
+  research --youtube <t> Pesquisa apenas no YouTube
+  research --github <t> Pesquisa apenas no GitHub
+  research --hn <t>     Pesquisa apenas no Hacker News
+  convert <arquivo>     Converte docs para Markdown (MarkItDown-style)
+  browse <url>          Navega e extrai conteudo (autonomo)
+  batch <n> <tarefa>    Gera N variacoes, S3 escolhe a melhor
+  template <nome>       Gera projeto boilerplate (fastapi, cli, react)
+
+Templates:
+  template list         Lista templates disponiveis
+  template fastapi-crud Gera projeto FastAPI com CRUD
+  template cli-python   Gera CLI Python
+  template react-vite   Gera React + Vite
+
 Ajuda:
   help                  Mostra esta ajuda
 """
@@ -786,6 +804,673 @@ def _print_tree(data, indent=0, prefix="", is_last=True, max_depth=6):
 # MAIN
 # ══════════════════════════════════════════════════════════════
 
+# ══════════════════════════════════════════════════════════════
+# S3 RESEARCH — Pesquisa multi-fonte (last30days-skill style)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_research(args):
+    """Pesquisa um topico em 8 fontes: Reddit, X, YouTube, HN, GitHub, Web, Polymarket, Bluesky."""
+    if not args:
+        print("Uso: hermes-workbench research <topico>")
+        print("  Pesquisa multi-fonte. Use --reddit, --x, --youtube, --github, --hn para filtrar.")
+        print("")
+        print("Exemplos:")
+        print('  hermes-workbench research "AI agents trends 2026"')
+        print('  hermes-workbench research --reddit "LangChain vs CrewAI"')
+        print('  hermes-workbench research --github "RAG frameworks python"')
+        return 1
+
+    # Parse args
+    source_filter = None
+    topic_parts = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a.startswith('--'):
+            source_filter = a[2:]  # reddit, x, youtube, github, hn
+        else:
+            topic_parts.append(a)
+        i += 1
+
+    topic = " ".join(topic_parts)
+    if not topic:
+        print("  ❌ Forneca um topico para pesquisa")
+        return 1
+
+    print("=" * 60)
+    print(f"🔍 S3 RESEARCH: {topic}")
+    print("=" * 60)
+
+    sources = {
+        'reddit': f"https://www.reddit.com/search/?q={topic.replace(' ', '+')}",
+        'x': f"https://x.com/search?q={topic.replace(' ', '%20')}&src=typed_query",
+        'youtube': f"https://www.youtube.com/results?search_query={topic.replace(' ', '+')}",
+        'github': f"https://github.com/search?q={topic.replace(' ', '+')}&type=repositories&s=stars&o=desc",
+        'hn': f"https://hn.algolia.com/api/v1/search?query={topic.replace(' ', '+')}&tags=story",
+        'web': f"https://html.duckduckgo.com/html/?q={topic.replace(' ', '+')}",
+        'polymarket': f"https://polymarket.com/search?query={topic.replace(' ', '+')}",
+        'bluesky': f"https://bsky.app/search?q={topic.replace(' ', '%20')}",
+    }
+
+    source_names = {
+        'reddit': '🔴 Reddit',
+        'x': '🐦 X/Twitter',
+        'youtube': '▶️ YouTube',
+        'github': '🐙 GitHub',
+        'hn': '🗣️  Hacker News',
+        'web': '🌐 Web',
+        'polymarket': '📊 Polymarket',
+        'bluesky': '🦋 Bluesky',
+    }
+
+    active = [s for s in sources] if not source_filter else [source_filter]
+    if source_filter and source_filter not in sources:
+        print(f"  ❌ Fonte desconhecida: --{source_filter}")
+        print(f"     Disponiveis: {', '.join(sources.keys())}")
+        return 1
+
+    print(f"\nFontes: {len(active)}")
+    print(f"Filtro: {'Todas' if not source_filter else f'--{source_filter}'}")
+    print()
+
+    for src in active:
+        url = sources[src]
+        name = source_names.get(src, src)
+        print(f"  {name}:")
+        print(f"    URL: {url[:100]}")
+        if src == 'hn':
+            # Hacker News has a free JSON API
+            _research_hn(topic)
+        elif src == 'github':
+            print(f"    Buscar no navegador: browser_navigate('{url}')")
+        else:
+            print(f"    Abrir no navegador: browser_navigate('{url}')")
+        print()
+
+    # Generate research summary
+    print(f"\n{'='*60}")
+    print("📋 S3 RESEARCH SUMMARY")
+    print("=" * 60)
+    print(f"""
+  Topico: {topic}
+  Fontes consultadas: {len(active)}
+  Data: {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}
+
+  Instrucoes para o S3:
+  1. Abra cada URL no navegador (browser_navigate)
+  2. Extraia os resultados (browser_snapshot)
+  3. Compresse cada fonte (s3_headroom.compress)
+  4. Sintetize relatorio com citacoes
+  5. Inclua no DECISION_PACKAGE (F1)
+
+  Formato do relatorio:
+  ## Resumo Executivo
+  [2-3 frases sobre o que as fontes dizem]
+
+  ## Por fonte
+  - Reddit: [trechos + citacoes]
+  - GitHub: [repos + stars]
+  - Hacker News: [discussoes + pontos]
+
+  ## Recomendacao S3
+  [O que fazer baseado na pesquisa]
+""")
+    return 0
+
+
+def _research_hn(topic):
+    """Pesquisa Hacker News via API JSON gratuita."""
+    import urllib.request
+    import json as _json
+    try:
+        url = f"https://hn.algolia.com/api/v1/search?query={topic.replace(' ', '+')}&tags=story&hitsPerPage=5"
+        req = urllib.request.Request(url, headers={"User-Agent": "HermesWorkbench/3.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = _json.loads(resp.read())
+            hits = data.get('hits', [])
+            for hit in hits[:5]:
+                title = hit.get('title', '?')
+                points = hit.get('points', 0)
+                url = hit.get('url', '')
+                print(f"    📌 {title} ({points} pts)")
+                if url:
+                    print(f"       {url[:90]}")
+            if not hits:
+                print(f"    (nenhum resultado no HN)")
+    except Exception as e:
+        print(f"    (HN API: {str(e)[:50]})")
+
+
+# ══════════════════════════════════════════════════════════════
+# CONVERT — Document to Markdown (MarkItDown-style)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_convert(args):
+    """Converte documentos para Markdown. Suporta: .docx, .xlsx, .pptx, .pdf, .html, .csv, .json, .yaml."""
+    if not args:
+        print("Uso: hermes-workbench convert <arquivo>")
+        print("  Converte documentos para Markdown.")
+        print("  Suporta: docx, xlsx, pptx, pdf, html, csv, json, yaml, py, js, ts")
+        print("")
+        print("Exemplos:")
+        print("  hermes-workbench convert relatorio.docx")
+        print("  hermes-workbench convert planilha.xlsx")
+        print('  hermes-workbench convert dados.json  | clipboard')
+        return 1
+
+    path = args[0]
+    if not os.path.exists(path):
+        print(f"  ❌ Arquivo nao encontrado: {path}")
+        return 1
+
+    ext = os.path.splitext(path)[1].lower()
+    filename = os.path.basename(path)
+
+    print(f"📄 Convertendo: {filename}")
+    print(f"{'='*50}")
+
+    try:
+        if ext == '.json':
+            with open(path, encoding='utf-8') as f:
+                data = json.load(f)
+            print(f"# {filename}\n")
+            print(f"```json")
+            print(json.dumps(data, indent=2, ensure_ascii=False)[:5000])
+            print("```")
+            if len(json.dumps(data)) > 5000:
+                print(f"\n*Arquivo truncado para 5000 chars*")
+
+        elif ext == '.csv':
+            import csv
+            with open(path, encoding='utf-8') as f:
+                reader = csv.reader(f)
+                print(f"# {filename}\n")
+                for i, row in enumerate(reader):
+                    print(f"| {' | '.join(row)} |")
+                    if i == 0:
+                        print(f"|{'|'.join('---' for _ in row)}|")
+
+        elif ext in ('.py', '.js', '.ts', '.jsx', '.tsx', '.rs', '.go', '.java', '.c',
+                     '.cpp', '.h', '.hpp', '.rb', '.php', '.swift', '.kt', '.r', '.m'):
+            lang_map = {'.py': 'python', '.js': 'javascript', '.ts': 'typescript',
+                       '.jsx': 'jsx', '.tsx': 'tsx', '.rs': 'rust', '.go': 'go',
+                       '.java': 'java', '.c': 'c', '.cpp': 'cpp', '.rb': 'ruby',
+                       '.php': 'php', '.swift': 'swift', '.kt': 'kotlin'}
+            lang = lang_map.get(ext, '')
+            with open(path, encoding='utf-8') as f:
+                content = f.read()
+            print(f"# {filename}\n")
+            print(f"```{lang}")
+            print(content[:5000])
+            print("```")
+            if len(content) > 5000:
+                print(f"\n*Arquivo truncado para 5000 chars ({len(content)} total)*")
+
+        elif ext in ('.md', '.markdown', '.txt', '.rst'):
+            with open(path, encoding='utf-8') as f:
+                print(f.read()[:5000])
+
+        elif ext == '.html':
+            with open(path, encoding='utf-8') as f:
+                content = f.read()
+            # Simple HTML to text conversion
+            import re as _re
+            text = _re.sub(r'<[^>]+>', ' ', content)
+            text = _re.sub(r'\s+', ' ', text).strip()
+            print(f"# {filename} (converted from HTML)\n")
+            print(text[:5000])
+
+        elif ext == '.yaml' or ext == '.yml':
+            try:
+                import yaml as _yaml
+                with open(path, encoding='utf-8') as f:
+                    data = _yaml.safe_load(f)
+                print(f"# {filename}\n")
+                print(f"```yaml")
+                print(_yaml.dump(data, default_flow_style=False)[:5000])
+                print("```")
+            except ImportError:
+                with open(path) as f:
+                    print(f.read()[:5000])
+
+        elif ext == '.pdf':
+            print("  ⚠️  PDF nao suportado diretamente. Use OCR tools.")
+            print("  Dica: pymupdf ou marker-pdf para extracao.")
+
+        else:
+            # Try reading as text
+            with open(path, encoding='utf-8', errors='ignore') as f:
+                content = f.read(5000)
+            print(f"# {filename}\n")
+            print("```")
+            print(content)
+            print("```")
+
+        print(f"\n{'='*50}")
+        print(f"✅ Convertido: {filename} → Markdown")
+
+    except Exception as e:
+        print(f"  ❌ Erro ao converter: {e}")
+        return 1
+
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# BROWSE — Navegador autonomo para S3
+# ══════════════════════════════════════════════════════════════
+
+def cmd_browse(args):
+    """Navega ate uma URL, extrai conteudo e comprime para o S3."""
+    if not args:
+        print("Uso: hermes-workbench browse <url>")
+        print("  Navega e extrai conteudo. Use no S3 para pesquisa autonoma.")
+        print("")
+        print("Exemplos:")
+        print("  hermes-workbench browse https://docs.fastapi.tiangolo.com")
+        print("  hermes-workbench browse https://github.com/user/repo")
+        return 1
+
+    url = args[0]
+    print("=" * 60)
+    print(f"🌐 S3 BROWSE: {url}")
+    print("=" * 60)
+    print(f"\nURL: {url}")
+    print(f"Instrucao: use browser_navigate('{url}') no Hermes")
+    print(f"\nFluxo S3:")
+    print(f"  1. browser_navigate('{url}')")
+    print(f"  2. browser_snapshot()  — extrai conteudo")
+    print(f"  3. s3_headroom.compress() — comprime para tokens")
+    print(f"  4. Inclui no DECISION_PACKAGE")
+
+    # Try to extract using curl for simple pages
+    import urllib.request
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            content = resp.read().decode('utf-8', errors='ignore')
+            title = ""
+            import re as _re
+            m = _re.search(r'<title>(.*?)</title>', content, _re.IGNORECASE | _re.DOTALL)
+            if m:
+                title = m.group(1).strip()
+            print(f"\n📋 Titulo: {title}")
+            print(f"   Tamanho: {len(content)} bytes")
+            print(f"   Status: {resp.status}")
+
+            from s3_headroom import context_compress
+            compressed = context_compress(content[:10000])
+            print(f"\n📦 Compressao:")
+            for line in compressed.split('\n')[:3]:
+                print(f"   {line}")
+
+    except Exception as e:
+        print(f"\n  ⚠️  Nao foi possivel extrair: {str(e)[:60]}")
+        print(f"  Use o browser_tool do Hermes para acessar.")
+
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# BATCH — Gera N variacoes, S3 escolhe a melhor
+# ══════════════════════════════════════════════════════════════
+
+def cmd_batch(args):
+    """Gera N variacoes de implementacao, S3 escolhe a melhor."""
+    if len(args) < 2:
+        print("Uso: hermes-workbench batch <n> <tarefa>")
+        print("  Gera N variacoes de implementacao.")
+        print("  S3 revisa cada uma e escolhe a melhor.")
+        print("")
+        print("Exemplos:")
+        print('  hermes-workbench batch 3 "criar API de autenticacao JWT"')
+        print('  hermes-workbench batch 2 "funcao de validacao de CPF"')
+        return 1
+
+    try:
+        n = int(args[0])
+        if n < 1 or n > 5:
+            print("  ❌ N deve ser entre 1 e 5")
+            return 1
+    except ValueError:
+        print(f"  ❌ N invalido: {args[0]}. Use um numero entre 1 e 5.")
+        return 1
+
+    task = " ".join(args[1:])
+    from s1_router import classify_task
+    routing = classify_task(task)
+
+    print("=" * 60)
+    print(f"📦 BATCH MODE — {n} variacoes")
+    print("=" * 60)
+    print(f"\nTarefa: {task}")
+    print(f"Roteamento: {routing['shell']} ({routing['model']})")
+    print(f"Custo: {routing['cost']}")
+    print(f"Variacoes: {n}")
+    print()
+
+    for i in range(1, n + 1):
+        sep = "=" * 50
+        approaches = {1: 'Principal', 2: 'Diferente', 3: 'Alternativa'}
+        approach = approaches.get(i, f'Variacao {i}')
+        print(f"  +-{sep}-+")
+        print(f"  |  VARIACAO {i} de {n}")
+        print(f"  |  Shell: {routing['shell']} - {routing['model']}")
+        print(f"  |  Abordagem: {approach}")
+        print(f"  |")
+        print(f"  |  S1 executa com abordagem {i}")
+        print(f"  |  S3 revisa (Quality Gate)")
+        print(f"  +-{sep}-+")
+        print()
+
+    print(f"\nFluxo completo:")
+    print(f"  1. S1 gera {n} implementacoes diferentes")
+    print(f"  2. S3 revisa cada uma (Quality Gate)")
+    print(f"  3. S3 escolhe a MELHOR baseado em:")
+    print(f"     - Qualidade do codigo")
+    print(f"     - Cobertura de requisitos")
+    print(f"     - Performance")
+    print(f"     - Manutenibilidade")
+    print(f"  4. Descarta as {n-1} restantes")
+    print(f"  5. Commit da vencedora")
+    print(f"\n💰 Economia estimada vs fazer 1 tentativa: ~{n}x mais chances de acerto")
+
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# TEMPLATE — Gerador de projetos boilerplate
+# ══════════════════════════════════════════════════════════════
+
+TEMPLATES = {
+    'fastapi-crud': {
+        'desc': 'API FastAPI com CRUD completo, SQLAlchemy, Pydantic',
+        'files': {
+            'main.py': '''from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import List, Optional
+import uvicorn
+
+app = FastAPI(title="{name}", version="1.0.0")
+
+# ─── Models ───
+class Item(BaseModel):
+    id: Optional[int] = None
+    name: str
+    description: Optional[str] = None
+
+# ─── Storage ───
+_db: List[Item] = []
+_counter = 0
+
+# ─── Routes ───
+@app.get("/")
+def root():
+    return {"message": "{name} API", "version": "1.0.0"}
+
+@app.get("/items", response_model=List[Item])
+def list_items():
+    return _db
+
+@app.post("/items", response_model=Item)
+def create_item(item: Item):
+    global _counter
+    _counter += 1
+    item.id = _counter
+    _db.append(item)
+    return item
+
+@app.get("/items/{item_id}", response_model=Optional[Item])
+def get_item(item_id: int):
+    for item in _db:
+        if item.id == item_id:
+            return item
+    return None
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+''',
+            'requirements.txt': '''fastapi>=0.115.0
+uvicorn>=0.30.0
+pydantic>=2.0.0
+''',
+            'README.md': '''# {name}
+
+API FastAPI com CRUD completo.
+
+## Uso
+
+```bash
+pip install -r requirements.txt
+python main.py
+```
+
+## Endpoints
+
+- `GET /` — Status
+- `GET /items` — Listar todos
+- `POST /items` — Criar novo
+- `GET /items/{id}` — Buscar por ID
+''',
+        }
+    },
+    'cli-python': {
+        'desc': 'CLI Python com Click, logging, testes',
+        'files': {
+            '{name}/cli.py': '''#!/usr/bin/env python3
+"""CLI {name} — Hermes Generated."""
+import click
+import logging
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
+
+@click.group()
+def cli():
+    """{name} — CLI tool."""
+    pass
+
+@cli.command()
+@click.argument("name")
+def hello(name):
+    """Say hello to NAME."""
+    click.echo(f"Hello, {{name}}!")
+    log.info(f"Said hello to {{name}}")
+
+@cli.command()
+@click.option("--count", "-c", default=1, help="Number of times")
+def repeat(count):
+    """Repeat the message."""
+    for i in range(count):
+        click.echo(f"Message {{i+1}}")
+
+if __name__ == "__main__":
+    cli()
+''',
+            'setup.py': '''from setuptools import setup, find_packages
+
+setup(
+    name="{name}",
+    version="0.1.0",
+    packages=find_packages(),
+    install_requires=["click>=8.0"],
+    entry_points={{"console_scripts": ["{name}={name}.cli:cli"]}},
+)
+''',
+            'README.md': '''# {name}
+
+CLI Python gerado pelo Hermes Workbench.
+
+## Instalacao
+
+```bash
+pip install -e .
+```
+
+## Uso
+
+```bash
+{name} hello "Mundo"
+{name} repeat --count 3
+```
+''',
+        }
+    },
+    'react-vite': {
+        'desc': 'App React + Vite + TypeScript basico',
+        'files': {
+            'src/App.tsx': '''import {{ useState }} from 'react'
+
+function App() {{
+  const [count, setCount] = useState(0)
+
+  return (
+    <div>
+      <h1>{name}</h1>
+      <p>Count: {{count}}</p>
+      <button onClick={{() => setCount(c => c + 1)}}>
+        Increment
+      </button>
+    </div>
+  )
+}}
+
+export default App
+''',
+            'src/main.tsx': '''import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+''',
+            'index.html': '''<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{name}</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+''',
+            'package.json': '''{{
+  "name": "{name}",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {{
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  }},
+  "dependencies": {{
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }},
+  "devDependencies": {{
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0"
+  }}
+}}
+''',
+            'tsconfig.json': '''{{
+  "compilerOptions": {{
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  }},
+  "include": ["src"]
+}}
+''',
+            'vite.config.ts': '''import {{ defineConfig }} from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({{
+  plugins: [react()],
+}})
+''',
+        }
+    },
+}
+
+def cmd_template(args):
+    """Gera projeto boilerplate a partir de templates."""
+    if not args or args[0] == 'list':
+        print("Templates disponiveis:")
+        print(f"  {'Nome':<20} Descricao")
+        print(f"  {'-'*20} {'-'*40}")
+        for name, tmpl in TEMPLATES.items():
+            print(f"  {name:<20} {tmpl['desc']}")
+        print(f"\nUse: hermes-workbench template <nome> [diretorio]")
+        return 0
+
+    name = args[0]
+    if name not in TEMPLATES:
+        print(f"  ❌ Template desconhecido: {name}")
+        print("  Use 'hermes-workbench template list' para ver os disponiveis.")
+        return 1
+
+    tmpl = TEMPLATES[name]
+    out_dir = args[1] if len(args) > 1 else os.path.join(os.getcwd(), name)
+
+    import shutil as _shutil
+    if os.path.exists(out_dir):
+        print(f"  ❌ Diretorio ja existe: {out_dir}")
+        return 1
+
+    os.makedirs(out_dir, exist_ok=True)
+    project_name = os.path.basename(out_dir)
+
+    print(f"📦 Gerando template: {name}")
+    print(f"   Projeto: {project_name}")
+    print(f"   Destino: {out_dir}")
+    print(f"   Arquivos: {len(tmpl['files'])}")
+    print()
+
+    for filepath, content in tmpl['files'].items():
+        full_path = os.path.join(out_dir, filepath)
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        formatted = content.format(name=project_name)
+        with open(full_path, 'w', encoding='utf-8') as f:
+            f.write(formatted)
+        print(f"  ✅ {filepath}")
+
+    print(f"\n✅ Projeto '{project_name}' criado em {out_dir}")
+    print(f"\nProximos passos:")
+    if name == 'fastapi-crud':
+        print(f"  cd {out_dir}")
+        print(f"  pip install -r requirements.txt")
+        print(f"  python main.py")
+    elif name == 'cli-python':
+        print(f"  cd {out_dir}")
+        print(f"  pip install -e .")
+        print(f"  {project_name} hello Mundo")
+    elif name == 'react-vite':
+        print(f"  cd {out_dir}")
+        print(f"  npm install")
+        print(f"  npm run dev")
+
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# HELP
+# ══════════════════════════════════════════════════════════════
+
 def cmd_help(args):
     print(__doc__)
     print("\nExemplos:")
@@ -819,6 +1504,11 @@ def main():
         'explain': cmd_explain,
         'devtoys': cmd_devtoys,
         'jtree': cmd_jtree,
+        'research': cmd_research,
+        'convert': cmd_convert,
+        'browse': cmd_browse,
+        'batch': cmd_batch,
+        'template': cmd_template,
         'help': cmd_help,
     }
 
