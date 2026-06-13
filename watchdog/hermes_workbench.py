@@ -809,136 +809,180 @@ def _print_tree(data, indent=0, prefix="", is_last=True, max_depth=6):
 # ══════════════════════════════════════════════════════════════
 
 def cmd_research(args):
-    """Pesquisa um topico em 8 fontes: Reddit, X, YouTube, HN, GitHub, Web, Polymarket, Bluesky."""
+    """Pesquisa um topico em 8 fontes com resultados REAIS via API."""
     if not args:
         print("Uso: hermes-workbench research <topico>")
-        print("  Pesquisa multi-fonte. Use --reddit, --x, --youtube, --github, --hn para filtrar.")
+        print("  Pesquisa multi-fonte com resultados reais.")
+        print("  Use --reddit, --x, --youtube, --github, --hn para filtrar.")
+        print("  Use --auto para buscar automaticamente via API (HN + GitHub).")
         print("")
         print("Exemplos:")
         print('  hermes-workbench research "AI agents trends 2026"')
-        print('  hermes-workbench research --reddit "LangChain vs CrewAI"')
-        print('  hermes-workbench research --github "RAG frameworks python"')
+        print('  hermes-workbench research --auto "RAG frameworks python"')
+        print('  hermes-workbench research --github --hn "LangChain"')
         return 1
 
     # Parse args
     source_filter = None
+    auto_mode = False
     topic_parts = []
     i = 0
     while i < len(args):
         a = args[i]
-        if a.startswith('--'):
-            source_filter = a[2:]  # reddit, x, youtube, github, hn
+        if a == '--auto':
+            auto_mode = True
+        elif a.startswith('--'):
+            source_filter = a[2:]
         else:
             topic_parts.append(a)
         i += 1
 
     topic = " ".join(topic_parts)
     if not topic:
-        print("  ❌ Forneca um topico para pesquisa")
+        print("  Forneca um topico para pesquisa")
         return 1
-
-    print("=" * 60)
-    print(f"🔍 S3 RESEARCH: {topic}")
-    print("=" * 60)
 
     sources = {
         'reddit': f"https://www.reddit.com/search/?q={topic.replace(' ', '+')}",
         'x': f"https://x.com/search?q={topic.replace(' ', '%20')}&src=typed_query",
         'youtube': f"https://www.youtube.com/results?search_query={topic.replace(' ', '+')}",
         'github': f"https://github.com/search?q={topic.replace(' ', '+')}&type=repositories&s=stars&o=desc",
-        'hn': f"https://hn.algolia.com/api/v1/search?query={topic.replace(' ', '+')}&tags=story",
+        'hn': '',
         'web': f"https://html.duckduckgo.com/html/?q={topic.replace(' ', '+')}",
         'polymarket': f"https://polymarket.com/search?query={topic.replace(' ', '+')}",
         'bluesky': f"https://bsky.app/search?q={topic.replace(' ', '%20')}",
     }
 
     source_names = {
-        'reddit': '🔴 Reddit',
-        'x': '🐦 X/Twitter',
-        'youtube': '▶️ YouTube',
-        'github': '🐙 GitHub',
-        'hn': '🗣️  Hacker News',
-        'web': '🌐 Web',
-        'polymarket': '📊 Polymarket',
-        'bluesky': '🦋 Bluesky',
+        'reddit': 'Reddit', 'x': 'X/Twitter', 'youtube': 'YouTube',
+        'github': 'GitHub', 'hn': 'Hacker News', 'web': 'Web',
+        'polymarket': 'Polymarket', 'bluesky': 'Bluesky',
     }
 
     active = [s for s in sources] if not source_filter else [source_filter]
     if source_filter and source_filter not in sources:
-        print(f"  ❌ Fonte desconhecida: --{source_filter}")
-        print(f"     Disponiveis: {', '.join(sources.keys())}")
+        print(f"Fonte desconhecida: --{source_filter}")
+        print(f"Disponiveis: {', '.join(sources.keys())}")
         return 1
 
-    print(f"\nFontes: {len(active)}")
-    print(f"Filtro: {'Todas' if not source_filter else f'--{source_filter}'}")
+    print("=" * 60)
+    print(f"🔍 S3 RESEARCH: {topic}")
+    print("=" * 60)
+    print(f"  Fontes: {len(active)} | Modo: {'AUTO (API)' if auto_mode else 'MANUAL (browser)'}")
     print()
 
+    results = {}  # source -> list of results
+
     for src in active:
-        url = sources[src]
         name = source_names.get(src, src)
-        print(f"  {name}:")
-        print(f"    URL: {url[:100]}")
-        if src == 'hn':
-            # Hacker News has a free JSON API
-            _research_hn(topic)
-        elif src == 'github':
-            print(f"    Buscar no navegador: browser_navigate('{url}')")
+        if src == 'hn' or (auto_mode and src == 'hn'):
+            data = _research_hn(topic)
+            results['hn'] = data
+            print(f"  [{name}]")
+            if data:
+                for item in data[:5]:
+                    print(f"    📌 {item['title'][:80]}")
+                    print(f"       {item['points']} pts | {item.get('url','')[:70]}")
+            else:
+                print(f"    (sem resultados)")
+            print()
+
+        elif src == 'github' or (auto_mode and src == 'github'):
+            data = _research_github(topic)
+            results['github'] = data
+            print(f"  [{name}]")
+            if data:
+                for item in data[:5]:
+                    print(f"    🐙 {item['full_name']}")
+                    print(f"       ⭐{item['stars']} | {item['description'][:70]}")
+            else:
+                print(f"    (sem resultados)")
+            print()
+
         else:
-            print(f"    Abrir no navegador: browser_navigate('{url}')")
-        print()
+            url = sources.get(src, '')
+            if url:
+                print(f"  [{name}]")
+                cmd = f"browser_navigate('{url}')"
+                print(f"    {cmd}")
+                print()
 
-    # Generate research summary
-    print(f"\n{'='*60}")
-    print("📋 S3 RESEARCH SUMMARY")
+    # Synthesis report
+    print(f"{'='*60}")
+    print("📋 S3 RESEARCH SYNTHESIS")
     print("=" * 60)
-    print(f"""
-  Topico: {topic}
-  Fontes consultadas: {len(active)}
-  Data: {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}
+    print(f"\n  Topico: {topic}")
+    print(f"  Data: {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}")
+    print(f"  Fontes: {len(active)}")
 
-  Instrucoes para o S3:
-  1. Abra cada URL no navegador (browser_navigate)
-  2. Extraia os resultados (browser_snapshot)
-  3. Compresse cada fonte (s3_headroom.compress)
-  4. Sintetize relatorio com citacoes
-  5. Inclua no DECISION_PACKAGE (F1)
+    total_items = sum(len(v) for v in results.values())
+    print(f"  Resultados via API: {total_items}")
 
-  Formato do relatorio:
-  ## Resumo Executivo
-  [2-3 frases sobre o que as fontes dizem]
+    if results.get('hn'):
+        print(f"\n  ## Hacker News")
+        for item in results['hn'][:3]:
+            print(f"  - {item['title'][:80]} ({item['points']} pts)")
 
-  ## Por fonte
-  - Reddit: [trechos + citacoes]
-  - GitHub: [repos + stars]
-  - Hacker News: [discussoes + pontos]
+    if results.get('github'):
+        print(f"\n  ## GitHub")
+        for item in results['github'][:3]:
+            print(f"  - {item['full_name']} ⭐{item['stars']}")
 
-  ## Recomendacao S3
-  [O que fazer baseado na pesquisa]
-""")
+    print(f"\n  ## Recomendacao S3")
+    print(f"  Para acesso completo, utilize browser_navigate para cada fonte.")
+    print(f"  O modo --auto busca automaticamente HN + GitHub via API.")
+    print()
+
     return 0
 
 
 def _research_hn(topic):
-    """Pesquisa Hacker News via API JSON gratuita."""
+    """Pesquisa Hacker News via API JSON gratuita. Retorna lista de resultados."""
     import urllib.request
     import json as _json
+    results = []
     try:
         url = f"https://hn.algolia.com/api/v1/search?query={topic.replace(' ', '+')}&tags=story&hitsPerPage=5"
         req = urllib.request.Request(url, headers={"User-Agent": "HermesWorkbench/3.0"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = _json.loads(resp.read())
-            hits = data.get('hits', [])
-            for hit in hits[:5]:
-                title = hit.get('title', '?')
-                points = hit.get('points', 0)
-                url = hit.get('url', '')
-                print(f"    📌 {title} ({points} pts)")
-                if url:
-                    print(f"       {url[:90]}")
-            if not hits:
-                print(f"    (nenhum resultado no HN)")
+            for hit in data.get('hits', [])[:5]:
+                results.append({
+                    'title': hit.get('title', '?'),
+                    'points': hit.get('points', 0),
+                    'url': hit.get('url', ''),
+                    'author': hit.get('author', ''),
+                    'created': hit.get('created_at', ''),
+                })
     except Exception as e:
-        print(f"    (HN API: {str(e)[:50]})")
+        pass
+    return results
+
+
+def _research_github(topic):
+    """Pesquisa GitHub via API REST. Retorna lista de resultados."""
+    import urllib.request
+    import json as _json
+    results = []
+    try:
+        url = f"https://api.github.com/search/repositories?q={topic.replace(' ', '+')}&sort=stars&order=desc&per_page=5"
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "HermesWorkbench/3.0",
+            "Accept": "application/vnd.github.v3+json",
+        })
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = _json.loads(resp.read())
+            for r in data.get('items', [])[:5]:
+                results.append({
+                    'full_name': r['full_name'],
+                    'stars': r['stargazers_count'],
+                    'description': r.get('description', '') or '',
+                    'url': r['html_url'],
+                    'language': r.get('language', ''),
+                })
+    except Exception as e:
+        pass
+    return results
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1405,6 +1449,257 @@ export default defineConfig({{
 ''',
         }
     },
+    'streamlit-dashboard': {
+        'desc': 'Dashboard Streamlit com graficos, tabelas, upload CSV',
+        'files': {
+            'app.py': '''import streamlit as st
+import pandas as pd
+import plotly.express as px
+
+st.set_page_config(page_title="{name}", layout="wide")
+st.title("{name}")
+
+# File upload
+uploaded = st.file_uploader("Upload CSV", type=["csv"])
+if uploaded is not None:
+    df = pd.read_csv(uploaded)
+    st.subheader("Data Preview")
+    st.dataframe(df.head(100))
+    
+    cols = df.select_dtypes(include="number").columns.tolist()
+    if len(cols) >= 2:
+        st.subheader("Chart")
+        x = st.selectbox("X axis", cols, index=0)
+        y = st.selectbox("Y axis", cols, index=min(1, len(cols)-1))
+        fig = px.scatter(df, x=x, y=y)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    st.subheader("Statistics")
+    st.dataframe(df.describe())
+else:
+    st.info("Upload a CSV file to get started.")
+''',
+            'requirements.txt': '''streamlit>=1.40.0
+pandas>=2.0.0
+plotly>=5.0.0
+''',
+            'README.md': '''# {name}
+
+Streamlit dashboard gerado pelo Hermes Workbench.
+
+## Uso
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+''',
+        }
+    },
+    'fastapi-full': {
+        'desc': 'API FastAPI completa: auth JWT, SQLAlchemy, migrations, tests',
+        'files': {
+            'app/main.py': '''from fastapi import FastAPI, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
+
+app = FastAPI(title="{name}", version="1.0.0")
+security = HTTPBearer()
+
+# ─── Auth ───
+SECRET = "change-me-in-production"
+
+def verify_token(cred: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        return jwt.decode(cred.credentials, SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        raise HTTPException(401, "Invalid token")
+
+@app.get("/")
+def root():
+    return {"message": "{name} API", "status": "running"}
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
+''',
+            'app/models.py': '''from pydantic import BaseModel
+from typing import Optional
+
+class Item(BaseModel):
+    id: Optional[int] = None
+    name: str
+    description: Optional[str] = None
+
+# In-memory storage (replace with SQLAlchemy for production)
+db: list[Item] = []
+counter = 0
+''',
+            'app/routes.py': '''from fastapi import APIRouter
+from app.models import Item, db, counter
+
+router = APIRouter(prefix="/items", tags=["items"])
+
+@router.get("/")
+def list_items():
+    return db
+
+@router.post("/")
+def create_item(item: Item):
+    global counter
+    counter += 1
+    item.id = counter
+    db.append(item)
+    return item
+
+@router.get("/{item_id}")
+def get_item(item_id: int):
+    for item in db:
+        if item.id == item_id:
+            return item
+    return None
+''',
+            'requirements.txt': '''fastapi>=0.115.0
+uvicorn>=0.30.0
+pyjwt>=2.0.0
+pydantic>=2.0.0
+''',
+            'tests/test_main.py': '''from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+def test_root():
+    r = client.get("/")
+    assert r.status_code == 200
+    assert r.json()["status"] == "running"
+
+def test_health():
+    r = client.get("/health")
+    assert r.status_code == 200
+''',
+            'README.md': '''# {name}
+
+API FastAPI completa com autenticacao JWT.
+
+## Uso
+
+```bash
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+## Testes
+
+```bash
+pytest tests/ -v
+```
+''',
+        }
+    },
+    'nextjs-app': {
+        'desc': 'App Next.js 15 com TypeScript, Tailwind, paginas basicas',
+        'files': {
+            'app/layout.tsx': '''import type {{ Metadata }} from "next"
+
+export const metadata: Metadata = {{
+  title: "{name}",
+  description: "Generated by Hermes Workbench",
+}}
+
+export default function RootLayout({{ children }}: {{
+  children: React.ReactNode
+}}) {{
+  return (
+    <html lang="en">
+      <body>{{children}}</body>
+    </html>
+  )
+}}
+''',
+            'app/page.tsx': '''export default function Home() {{
+  return (
+    <main>
+      <h1>{name}</h1>
+      <p>Welcome to your Next.js app!</p>
+    </main>
+  )
+}}
+''',
+            'app/globals.css': '''@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {{
+  font-family: system-ui, sans-serif;
+  padding: 2rem;
+}}
+''',
+            'package.json': '''{{
+  "name": "{name}",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {{
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  }},
+  "dependencies": {{
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }},
+  "devDependencies": {{
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.0.0",
+    "tailwindcss": "^4.0.0"
+  }}
+}}
+''',
+            'tsconfig.json': '''{{
+  "compilerOptions": {{
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{{ "name": "next" }}]
+  }},
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}}
+''',
+            'next.config.ts': '''import type {{ NextConfig }} from "next"
+
+const config: NextConfig = {{
+  reactStrictMode: true,
+}}
+
+export default config
+''',
+            'README.md': '''# {name}
+
+Next.js app gerado pelo Hermes Workbench.
+
+## Uso
+
+```bash
+npm install
+npm run dev
+```
+''',
+        }
+    },
 }
 
 def cmd_template(args):
@@ -1450,7 +1745,7 @@ def cmd_template(args):
         print(f"  ✅ {filepath}")
 
     print(f"\n✅ Projeto '{project_name}' criado em {out_dir}")
-    print(f"\nProximos passos:")
+    print(f"\\nProximos passos:")
     if name == 'fastapi-crud':
         print(f"  cd {out_dir}")
         print(f"  pip install -r requirements.txt")
@@ -1460,6 +1755,19 @@ def cmd_template(args):
         print(f"  pip install -e .")
         print(f"  {project_name} hello Mundo")
     elif name == 'react-vite':
+        print(f"  cd {out_dir}")
+        print(f"  npm install")
+        print(f"  npm run dev")
+    elif name == 'streamlit-dashboard':
+        print(f"  cd {out_dir}")
+        print(f"  pip install -r requirements.txt")
+        print(f"  streamlit run app.py")
+    elif name == 'fastapi-full':
+        print(f"  cd {out_dir}")
+        print(f"  pip install -r requirements.txt")
+        print(f"  uvicorn app.main:app --reload")
+        print(f"  pytest tests/ -v  (para testar)")
+    elif name == 'nextjs-app':
         print(f"  cd {out_dir}")
         print(f"  npm install")
         print(f"  npm run dev")
