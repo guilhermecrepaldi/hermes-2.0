@@ -990,43 +990,79 @@ def _research_github(topic):
 # ══════════════════════════════════════════════════════════════
 
 def cmd_convert(args):
-    """Converte documentos para Markdown. Suporta: .docx, .xlsx, .pptx, .pdf, .html, .csv, .json, .yaml."""
+    """Converte QUALQUER documento para Markdown usando MarkItDown (Microsoft 152k⭐)."""
     if not args:
-        print("Uso: hermes-workbench convert <arquivo>")
-        print("  Converte documentos para Markdown.")
-        print("  Suporta: docx, xlsx, pptx, pdf, html, csv, json, yaml, py, js, ts")
+        print("Uso: hermes-workbench convert <arquivo|url>")
+        print("  Converte QUALQUER documento para Markdown.")
+        print("  Usa MarkItDown (Microsoft) - suporta: html, docx, xlsx, pptx, pdf, csv, json, yaml, py")
         print("")
         print("Exemplos:")
         print("  hermes-workbench convert relatorio.docx")
         print("  hermes-workbench convert planilha.xlsx")
-        print('  hermes-workbench convert dados.json  | clipboard')
+        print("  hermes-workbench convert https://example.com")
         return 1
 
     path = args[0]
-    if not os.path.exists(path):
-        print(f"  ❌ Arquivo nao encontrado: {path}")
+    if not os.path.exists(path) and not path.startswith(('http://', 'https://')):
+        print(f"  Arquivo nao encontrado: {path}")
         return 1
 
-    ext = os.path.splitext(path)[1].lower()
-    filename = os.path.basename(path)
+    filename = os.path.basename(path) if not path.startswith('http') else path.split('/')[-1]
+    ext = os.path.splitext(path)[1].lower() if not path.startswith('http') else '.html'
 
     print(f"📄 Convertendo: {filename}")
     print(f"{'='*50}")
 
+    # Try MarkItDown first (for docx, xlsx, pptx, pdf, html)
+    try:
+        from markitdown import MarkItDown as _MarkItDown
+        _md = _MarkItDown()
+        if path.startswith(('http://', 'https://')):
+            import urllib.request
+            req = urllib.request.Request(path, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                content = resp.read()
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix='.html', delete=False, mode='wb') as f:
+                f.write(content)
+                tmp_path = f.name
+            try:
+                result = _md.convert(tmp_path)
+                output = result.text_content
+            finally:
+                os.unlink(tmp_path)
+        elif ext in ('.docx', '.xlsx', '.pptx', '.pdf', '.html', '.htm'):
+            result = _md.convert(path)
+            output = result.text_content
+        else:
+            output = None
+
+        if output:
+            print(output[:5000])
+            if len(output) > 5000:
+                print(f"\n*Arquivo truncado para 5000 chars ({len(output)} total)*")
+            print(f"\n{'='*50}")
+            print(f"✅ Convertido via MarkItDown: {filename} -> Markdown")
+            return 0
+    except ImportError:
+        pass
+    except Exception as e:
+        print(f"  (MarkItDown: {str(e)[:50]}, usando fallback)")
+        pass
+
+    # Fallback: conversao manual para formatos comuns
     try:
         if ext == '.json':
-            with open(path, encoding='utf-8') as f:
+            with open(path) as f:
                 data = json.load(f)
             print(f"# {filename}\n")
             print(f"```json")
             print(json.dumps(data, indent=2, ensure_ascii=False)[:5000])
             print("```")
-            if len(json.dumps(data)) > 5000:
-                print(f"\n*Arquivo truncado para 5000 chars*")
 
         elif ext == '.csv':
             import csv
-            with open(path, encoding='utf-8') as f:
+            with open(path, newline='', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 print(f"# {filename}\n")
                 for i, row in enumerate(reader):
@@ -1047,56 +1083,34 @@ def cmd_convert(args):
             print(f"```{lang}")
             print(content[:5000])
             print("```")
-            if len(content) > 5000:
-                print(f"\n*Arquivo truncado para 5000 chars ({len(content)} total)*")
 
         elif ext in ('.md', '.markdown', '.txt', '.rst'):
             with open(path, encoding='utf-8') as f:
                 print(f.read()[:5000])
 
-        elif ext == '.html':
-            with open(path, encoding='utf-8') as f:
-                content = f.read()
-            # Simple HTML to text conversion
-            import re as _re
-            text = _re.sub(r'<[^>]+>', ' ', content)
-            text = _re.sub(r'\s+', ' ', text).strip()
-            print(f"# {filename} (converted from HTML)\n")
-            print(text[:5000])
-
         elif ext == '.yaml' or ext == '.yml':
             try:
-                import yaml as _yaml
+                import yaml
                 with open(path, encoding='utf-8') as f:
-                    data = _yaml.safe_load(f)
+                    data = yaml.safe_load(f)
                 print(f"# {filename}\n")
                 print(f"```yaml")
+                import yaml as _yaml
                 print(_yaml.dump(data, default_flow_style=False)[:5000])
                 print("```")
             except ImportError:
                 with open(path) as f:
                     print(f.read()[:5000])
-
-        elif ext == '.pdf':
-            print("  ⚠️  PDF nao suportado diretamente. Use OCR tools.")
-            print("  Dica: pymupdf ou marker-pdf para extracao.")
-
         else:
-            # Try reading as text
             with open(path, encoding='utf-8', errors='ignore') as f:
-                content = f.read(5000)
-            print(f"# {filename}\n")
-            print("```")
-            print(content)
-            print("```")
+                print(f.read(5000))
 
         print(f"\n{'='*50}")
-        print(f"✅ Convertido: {filename} → Markdown")
+        print(f"✅ Convertido: {filename} -> Markdown")
 
     except Exception as e:
-        print(f"  ❌ Erro ao converter: {e}")
+        print(f"  Erro ao converter: {e}")
         return 1
-
     return 0
 
 
@@ -1776,6 +1790,357 @@ def cmd_template(args):
 
 
 # ══════════════════════════════════════════════════════════════
+# MEMORIA PERSISTENTE — Contexto entre projetos/sessoes
+# ══════════════════════════════════════════════════════════════
+
+MEMORY_DIR = os.path.expanduser("~/.hermes-workbench-memory")
+MEMORY_FILE = os.path.join(MEMORY_DIR, "memory.json")
+
+def _load_memory():
+    os.makedirs(MEMORY_DIR, exist_ok=True)
+    if os.path.exists(MEMORY_FILE):
+        try:
+            with open(MEMORY_FILE, encoding='utf-8') as f:
+                return json.load(f)
+        except: pass
+    return {"entries": [], "contexts": {}}
+
+def _save_memory(data):
+    os.makedirs(MEMORY_DIR, exist_ok=True)
+    with open(MEMORY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+def cmd_memory(args):
+    """Memoria persistente entre projetos e sessoes."""
+    if not args or args[0] == 'list':
+        data = _load_memory()
+        entries = data.get('entries', [])
+        print(f"📝 MEMORIA: {len(entries)} entradas")
+        print(f"   Contextos: {len(data.get('contexts', {}))}")
+        print()
+        for e in entries[-10:]:
+            print(f"  [{e.get('date','')[:10]}] {e.get('key','?')}: {e.get('value','')[:80]}")
+        if len(entries) > 10:
+            print(f"  ... +{len(entries)-10} entradas")
+        return 0
+
+    cmd = args[0]
+    rest = args[1:]
+
+    if cmd == 'save' and len(rest) >= 2:
+        key = rest[0]
+        value = " ".join(rest[1:])
+        data = _load_memory()
+        data['entries'].append({
+            'key': key,
+            'value': value,
+            'date': datetime.now().isoformat(),
+        })
+        _save_memory(data)
+        print(f"✅ Salvo: {key}")
+        return 0
+
+    elif cmd == 'search' and rest:
+        query = " ".join(rest).lower()
+        data = _load_memory()
+        results = [e for e in data['entries'] if query in e['key'].lower() or query in e['value'].lower()]
+        print(f"🔍 Buscando: {query}")
+        print(f"   Resultados: {len(results)}")
+        for r in results[-5:]:
+            print(f"  [{r.get('date','')[:10]}] {r['key']}: {r['value'][:100]}")
+        return 0
+
+    elif cmd == 'context' and rest:
+        ctx_name = rest[0]
+        data = _load_memory()
+        ctx = data['contexts'].get(ctx_name, {})
+        if not ctx:
+            print(f"Contexto '{ctx_name}' vazio ou inexistente")
+            return 0
+        print(f"📦 Contexto: {ctx_name}")
+        for k, v in ctx.items():
+            print(f"  {k}: {str(v)[:120]}")
+        return 0
+
+    elif cmd == 'save-context' and len(rest) >= 2:
+        ctx_name = rest[0]
+        ctx_data = " ".join(rest[1:])
+        data = _load_memory()
+        if ctx_name not in data['contexts']:
+            data['contexts'][ctx_name] = {}
+        import json as _json
+        try: parsed = _json.loads(ctx_data); data['contexts'][ctx_name].update(parsed)
+        except: data['contexts'][ctx_name]['note'] = ctx_data
+        _save_memory(data)
+        print(f"✅ Contexto '{ctx_name}' atualizado")
+        return 0
+
+    else:
+        print("Uso: hermes-workbench memory <comando> [args]")
+        print("  list                    Lista entradas recentes")
+        print('  save <key> <value>      Salva informacao')
+        print('  search <query>          Busca na memoria')
+        print('  context <nome>          Ve contexto de projeto')
+        print('  save-context <n> <json>  Salva contexto')
+        return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# DOCS — Documentacao automatica de projetos
+# ══════════════════════════════════════════════════════════════
+
+def cmd_docs(args):
+    """Gera documentacao automatica de QUALQUER projeto."""
+    if not args or args[0] == 'help':
+        print("Uso: hermes-workbench docs <caminho>")
+        print("  Gera documentacao automatica do projeto.")
+        print("  Cria README.md + estrutura + API docs (se FastAPI).")
+        print()
+        print("Exemplos:")
+        print("  hermes-workbench docs .")
+        print("  hermes-workbench docs D:\\meu-projeto")
+        return 0
+
+    path = args[0]
+    if not os.path.exists(path):
+        print(f"  Caminho nao encontrado: {path}")
+        return 1
+
+    from s3_headroom import project_load, project_map
+    info = project_load(path)
+
+    project_name = os.path.basename(path)
+    docs_dir = os.path.join(path, "docs")
+    os.makedirs(docs_dir, exist_ok=True)
+
+    print(f"📖 Gerando documentacao para: {project_name}")
+    print(f"   Destino: {docs_dir}/")
+    print()
+
+    # README.md
+    readme = f"""# {project_name}
+
+## Visao Geral
+{info.get('language', 'N/A')} project with {info['files']} files across {info['dirs']} directories.
+
+## Estrutura
+```
+"""
+
+    tree = project_map(path, max_depth=2)
+    for line in tree.split('\n')[:20]:
+        readme += f"{line}\n"
+    if len(tree.split('\n')) > 20:
+        readme += "...\n"
+
+    readme += f"""```
+
+## Estatisticas
+- Linguagem principal: {info.get('language', 'N/A')}
+- Arquivos: {info['files']}
+- Pastas: {info['dirs']}
+- Linhas de codigo: {info['lines']:,}
+
+## Arquivos-chave
+"""
+    for kf in info.get('key_files', [])[:5]:
+        readme += f"- `{kf['path']}` ({kf['lines']} lines)\n"
+
+    readme += f"""
+---
+*Gerado automaticamente pelo Hermes Workbench em {datetime.now().strftime('%Y-%m-%d %H:%M')}*
+"""
+    readme_path = os.path.join(docs_dir, "README.md")
+    with open(readme_path, 'w', encoding='utf-8') as f:
+        f.write(readme)
+    print(f"  ✅ docs/README.md")
+
+    # STRUCTURE.md
+    struct = f"""# Estrutura do Projeto - {project_name}
+
+## Arvore de Diretorios
+```
+{tree}
+```
+"""
+    struct_path = os.path.join(docs_dir, "STRUCTURE.md")
+    with open(struct_path, 'w', encoding='utf-8') as f:
+        f.write(struct)
+    print(f"  ✅ docs/STRUCTURE.md")
+
+    # API.md (se FastAPI)
+    has_fastapi = any('fastapi' in f.lower() for f in os.listdir(path) if f.endswith('.py')) or \
+                  any('fastapi' in open(os.path.join(root, f), encoding='utf-8', errors='ignore').read()[:500]
+                      for root, _, files in os.walk(path) for f in files[:20] if f.endswith('.py'))
+    if has_fastapi:
+        api_doc = f"""# API Reference - {project_name}
+
+## Endpoints
+*Gerado por deteccao automatica. Para documentacao completa, execute o servidor e acesse /docs*
+
+## Modelos
+*Gerado por deteccao automatica.*
+
+---
+*Gerado automaticamente pelo Hermes Workbench*
+"""
+        api_path = os.path.join(docs_dir, "API.md")
+        with open(api_path, 'w', encoding='utf-8') as f:
+            f.write(api_doc)
+        print(f"  ✅ docs/API.md (FastAPI detectado)")
+
+    print(f"\n✅ Documentacao gerada em {docs_dir}/")
+    print(f"   Arquivos: {len(os.listdir(docs_dir))}")
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# TEST — Automacao de testes
+# ══════════════════════════════════════════════════════════════
+
+def cmd_test(args):
+    """Gera, executa e relata testes automaticamente."""
+    if not args or args[0] == 'help':
+        print("Uso: hermes-workbench test <comando> [args]")
+        print("  generate <path>    Gera esqueleto de testes")
+        print("  run [path]         Executa pytest")
+        print("  report [path]      Relatorio de cobertura")
+        print()
+        print("Exemplos:")
+        print("  hermes-workbench test generate .")
+        print("  hermes-workbench test run tests/")
+        return 0
+
+    cmd = args[0]
+    path = args[1] if len(args) > 1 else os.getcwd()
+
+    if cmd == 'generate':
+        return _test_generate(path)
+    elif cmd == 'run':
+        return _test_run(path)
+    elif cmd == 'report':
+        return _test_report(path)
+    else:
+        print(f"Comando desconhecido: {cmd}")
+        return 1
+
+
+def _test_generate(path):
+    """Gera esqueleto de testes para projeto Python."""
+    if not os.path.exists(path):
+        print(f"Caminho nao encontrado: {path}")
+        return 1
+
+    test_dir = os.path.join(path, "tests")
+    os.makedirs(test_dir, exist_ok=True)
+
+    init_file = os.path.join(test_dir, "__init__.py")
+    if not os.path.exists(init_file):
+        with open(init_file, 'w') as f:
+            f.write("# Tests\n")
+        print(f"  ✅ tests/__init__.py")
+
+    # Find Python source files and generate test stubs
+    generated = 0
+    py_files = []
+    for root, _, files in os.walk(path):
+        if 'tests' in root or '.git' in root or '__pycache__' in root:
+            continue
+        for f in files:
+            if f.endswith('.py') and f != '__init__.py':
+                py_files.append(os.path.join(root, f))
+
+    for src_file in py_files[:20]:
+        rel = os.path.relpath(src_file, path)
+        test_name = f"test_{os.path.splitext(os.path.basename(src_file))[0]}.py"
+        test_path = os.path.join(test_dir, test_name)
+
+        if os.path.exists(test_path):
+            continue
+
+        # Extract function/class names
+        funcs = []
+        classes = []
+        with open(src_file, encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                if line.startswith('def '):
+                    funcs.append(line.split('(')[0].replace('def ', '').strip())
+                elif line.startswith('class '):
+                    classes.append(line.split('(')[0].replace('class ', '').strip())
+
+        if funcs or classes:
+            # Build test content without nested f-strings
+            import_path = ".".join(rel.replace(os.sep, '/').replace('.py', '').split('/'))
+            imports = ", ".join(classes[:3] + funcs[:3])
+            test_content = '"""Tests for %s."""\n' % rel
+            test_content += 'import pytest\n'
+            test_content += 'from %s import %s\n\n' % (import_path, imports)
+            
+            for f in funcs[:5]:
+                test_content += 'def test_%s():\n    """Test %s."""\n    # TODO: implement\n    assert True\n\n' % (f, f)
+            
+            for c in classes[:3]:
+                test_content += 'class Test%s:\n    """Tests for %s."""\n\n    def test_init(self):\n        """Test initialization."""\n        # TODO: implement\n        assert True\n\n' % (c, c)
+            with open(test_path, 'w', encoding='utf-8') as f:
+                f.write(test_content)
+            generated += 1
+
+    print(f"✅ Testes gerados: {generated} arquivos em {test_dir}/")
+    if generated == 0:
+        print("   (todos ja existem ou nenhum modulo Python encontrado)")
+    return 0
+
+
+def _test_run(path):
+    """Executa pytest no diretorio."""
+    import subprocess as _sp
+    print(f"🧪 Executando testes em: {path}")
+    print(f"{'='*50}")
+    try:
+        r = _sp.run(["pytest", path, "-v", "--tb=short"],
+                    capture_output=True, text=True, timeout=60,
+                    creationflags=_sp.CREATE_NO_WINDOW)
+        output = r.stdout + r.stderr
+        print(output[-1000:])
+        print(f"\n{'='*50}")
+        print(f"✅ Exit code: {r.returncode}")
+        return r.returncode
+    except FileNotFoundError:
+        print("  pytest nao instalado. Instale com: pip install pytest")
+        return 1
+    except Exception as e:
+        print(f"  Erro: {e}")
+        return 1
+
+
+def _test_report(path):
+    """Gera relatorio de testes."""
+    import subprocess as _sp
+    print(f"📊 Relatorio de testes: {path}")
+    try:
+        r = _sp.run(["pytest", path, "-v", "--tb=line", "--no-header"],
+                    capture_output=True, text=True, timeout=120,
+                    creationflags=_sp.CREATE_NO_WINDOW)
+        lines = r.stdout.split('\n')
+        passed = sum(1 for l in lines if 'PASSED' in l)
+        failed = sum(1 for l in lines if 'FAILED' in l)
+        errors = sum(1 for l in lines if 'ERROR' in l)
+        print(f"  Passed: {passed}")
+        print(f"  Failed: {failed}")
+        print(f"  Errors: {errors}")
+        print(f"  Total:  {passed + failed + errors}")
+        if failed > 0:
+            print(f"\n  Falhas:")
+            for l in lines:
+                if 'FAILED' in l:
+                    print(f"    {l}")
+        return 0 if failed == 0 else 1
+    except FileNotFoundError:
+        print("  pytest nao instalado")
+        return 1
+
+
+# ══════════════════════════════════════════════════════════════
 # HELP
 # ══════════════════════════════════════════════════════════════
 
@@ -1817,6 +2182,9 @@ def main():
         'browse': cmd_browse,
         'batch': cmd_batch,
         'template': cmd_template,
+        'memory': cmd_memory,
+        'docs': cmd_docs,
+        'test': cmd_test,
         'help': cmd_help,
     }
 
