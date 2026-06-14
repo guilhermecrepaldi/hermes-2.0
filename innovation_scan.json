@@ -1,197 +1,105 @@
 {
-  "timestamp": "2026-06-14T07:50:00.000000",
-  "edition": "004",
-  "cards_scanned": 116,
-  "new_skills": 8,
-  "existing_skills_confirmed": 17,
-  "cascade_coverage": {
-    "hardware": 27,
-    "arquitetura": 43,
-    "apps": 32,
-    "estrategia": 24
-  },
-  "findings": [
+  "scan_date": "2026-06-14",
+  "scanned_editions": ["001", "002", "003", "004", "005"],
+  "total_cards_analyzed": 144,
+  "new_skills_created": [
     {
-      "tech": "reasonalloc",
-      "title": "ReasonAlloc — Hierarchical KV Cache Allocation",
-      "confidence": "high",
-      "skill_created": true,
-      "reason": "KV cache memory optimization (60% reduction) compatible with vLLM/TensorRT-LLM. Essential for reasoning models with long chains-of-thought. New skill created."
+      "name": "omnigent",
+      "category": "autonomous-ai-agents",
+      "source_edition": "005",
+      "source_card": "arc-005-06",
+      "reason": "Databricks Omnigent — meta-harness open-source para orquestração de múltiplos agentes de código (Claude Code, Codex, OpenCode, Gemini CLI). Implementável como skill de delegação inteligente no Hermes."
     },
     {
-      "tech": "eevee",
-      "title": "EEVEE — Test-Time Prompt Learning for Self-Improving Agents",
-      "confidence": "high",
-      "skill_created": true,
-      "reason": "Test-time prompt learning paradigm. Agents learn to adjust prompts during execution. Directly applicable to Hermes multi-agent systems. New skill created."
+      "name": "glm-5-2",
+      "category": "mlops",
+      "source_edition": "005",
+      "source_card": "app-005-05",
+      "reason": "GLM 5.2 — modelo MoE 130B (12B ativos) da Zhipu AI, open-source (MIT), 1M tokens de contexto, foco em coding e raciocínio. Implementável como provider alternativo no Hermes."
     },
     {
-      "tech": "projectmem",
-      "title": "PROJECTMEM — Local Event-Sourced Memory for Coding Agents",
-      "confidence": "high",
-      "skill_created": true,
-      "reason": "Local-first event-sourced memory architecture. Each agent action becomes immutable event. No external API dependency. Valuable design pattern for Hermes memory. New skill created."
-    },
-    {
-      "tech": "nemoclaw",
-      "title": "NVIDIA NemoClaw — Secure Coding Agents with Sandboxing",
-      "confidence": "high",
-      "skill_created": true,
-      "reason": "NVIDIA platform for autonomous coding agents with sandboxing, human approval policies, audit logging. Framework for enterprise-grade agent safety. New skill created."
-    },
-    {
-      "tech": "maxproof",
-      "title": "Maxproof — Formal Verification Framework for AI Systems",
-      "confidence": "medium",
-      "skill_created": true,
-      "reason": "Formal verification framework based on maximum likelihood logic. Theoretical guarantees for critical system correctness. Watch for production adoption. New skill created."
-    },
-    {
-      "tech": "agents-last-exam",
-      "title": "Agents' Last Exam — UC Berkeley Agent Benchmark",
-      "confidence": "high",
-      "skill_created": true,
-      "reason": "UC Berkeley benchmark for real-world agent capabilities (programming, research, web nav, tools). More relevant than traditional Q&A benchmarks for evaluating Hermes. New skill created."
-    },
-    {
-      "tech": "confidential-computing",
-      "title": "NVIDIA Confidential Computing — TEE Secure Inference",
-      "confidence": "high",
-      "skill_created": true,
-      "reason": "TEE-based secure inference. Data encrypted during processing. Used by Apple Private Cloud Compute. Potential EU AI Act requirement. Privacy routing for Hermes providers. New skill created."
-    },
-    {
-      "tech": "triton-inference-server",
-      "title": "NVIDIA Triton Inference Server — 2-5x Throughput Improvement",
-      "confidence": "high",
-      "skill_created": true,
-      "reason": "Production-grade inference server. Dynamic batching, model ensembles, concurrent execution. 2-5x throughput without hardware change. Cost-per-token optimization for Hermes. New skill created."
-    },
-    {
-      "tech": "diffusiongemma",
-      "title": "DiffusionGemma — Google Parallel Text Generation",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (diffusiongemma under mlops). Confirmed."
-    },
-    {
-      "tech": "opencv-5",
-      "title": "OpenCV 5 — Computer Vision Leap",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (opencv-5 under mlops). Confirmed."
-    },
-    {
-      "tech": "apache-burr",
-      "title": "Apache Burr — Framework for Auditable Agents",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (apache-burr). Confirmed."
-    },
-    {
-      "tech": "cohere-coding-agent",
-      "title": "Cohere Coding Agent 30B",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (cohere-coding-agent). Confirmed."
-    },
-    {
-      "tech": "headroom",
-      "title": "headroom — Tool Output Compression",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (headroom). Confirmed."
-    },
-    {
-      "tech": "open-notebook",
-      "title": "open-notebook — Open-Source NotebookLM",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (open-notebook under research). Confirmed."
-    },
-    {
-      "tech": "agent-reach",
-      "title": "Agent-Reach — CLI Social Media Access",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (agent-reach). Confirmed."
-    },
-    {
-      "tech": "taste-skill",
-      "title": "taste-skill — Style Quality for AI Outputs",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (taste-skill). Confirmed."
-    },
-    {
-      "tech": "vibevoice",
-      "title": "Microsoft VibeVoice — Open-Source TTS",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (vibevoice). Confirmed."
-    },
-    {
-      "tech": "roboflow-supervision",
-      "title": "roboflow/supervision — CV Tools",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (roboflow-supervision). Confirmed."
-    },
-    {
-      "tech": "open-llm-vtuber",
-      "title": "Open-LLM-VTuber — Voice + Avatar",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (open-llm-vtuber). Confirmed."
-    },
-    {
-      "tech": "mempalace",
-      "title": "MemPalace — Memory System for Agents",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (mempalace). Confirmed."
-    },
-    {
-      "tech": "openenv",
-      "title": "OpenEnv — RL Environment for Agents",
-      "confidence": "medium",
-      "skill_created": false,
-      "reason": "Already has skill (openenv). Confirmed."
-    },
-    {
-      "tech": "olmo-eval",
-      "title": "olmo-eval — Allen AI Evaluation Workbench",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (olmo-eval). Confirmed."
-    },
-    {
-      "tech": "mimo-code",
-      "title": "MiMo Code — Xiaomi Coding Agent",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (mimo-code). Confirmed."
-    },
-    {
-      "tech": "skillopt",
-      "title": "Microsoft SkillOpt — Prompt Optimization",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (skillopt). Confirmed."
-    },
-    {
-      "tech": "harness-1",
-      "title": "Harness-1 — Search Agent",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (harness-1 under research). Confirmed."
-    },
-    {
-      "tech": "huggingface-hub",
-      "title": "hf CLI Agent-Optimized",
-      "confidence": "medium",
-      "skill_created": false,
-      "reason": "Already has skill (huggingface-hub). Confirmed."
+      "name": "gemma-4-12b",
+      "category": "mlops",
+      "source_edition": "004",
+      "source_card": "arc-004-07",
+      "reason": "Google DeepMind Gemma 4 12B — modelo multimodal encoder-free que processa texto, imagem, áudio e vídeo nativamente. Aberto, gratuito, roda em 16GB VRAM. Implementável como modelo local multimodal no Hermes."
     }
-  ]
+  ],
+  "already_skilled_technologies": [
+    "agent-reach", "agents-last-exam", "apache-burr", "blogwatcher",
+    "codebase-pack", "codebase-rag", "cohere-coding-agent",
+    "confidential-computing", "diffusiongemma", "eevee", "harness-1",
+    "headroom", "llm-wiki", "mempalace", "mimo-code", "nemoclaw",
+    "nemotron-35-asr", "open-llm-vtuber", "open-notebook", "opencv-5",
+    "openenv", "projectmem", "reasonalloc", "roboflow-supervision",
+    "serge-code-review", "skillopt", "taste-skill", "vibevoice"
+  ],
+  "skipped_technologies": [
+    {
+      "name": "Anthropic Conway",
+      "reason": "Rumored/unreleased platform — sem código disponível",
+      "card": "app-001-08"
+    },
+    {
+      "name": "KAN in FPGAs",
+      "reason": "Hardware específico (FPGA) — não implementável como skill de software",
+      "card": "hw-001-06"
+    },
+    {
+      "name": "Flash-Routing (Apple)",
+      "reason": "Arquitetura de hardware proprietária — não implementável",
+      "card": "arc-001-03"
+    },
+    {
+      "name": "NVFP4 / DeepSeek-V4-Pro",
+      "reason": "Otimização de hardware NVIDIA Blackwell — específica de GPU",
+      "card": "arc-005-04"
+    },
+    {
+      "name": "Perplexity Hybrid Router",
+      "reason": "Conceito apresentado, sem código open-source disponível",
+      "card": "arc-005-03"
+    },
+    {
+      "name": "RevEng.AI",
+      "reason": "Startup com rodada de investimento — sem produto aberto disponível",
+      "card": "str-004-06"
+    },
+    {
+      "name": "RSI (Recursive Self-Improvement)",
+      "reason": "Técnica de pesquisa sem implementação prática disponível",
+      "card": "app-004-07"
+    },
+    {
+      "name": "Microsoft MAI-Thinking-1",
+      "reason": "Modelo proprietário Microsoft — não open-source",
+      "card": "arc-005-02"
+    },
+    {
+      "name": "Pool (screenshot-to-action)",
+      "reason": "App mobile, não CLI — sem API pública",
+      "card": "app-003-10"
+    },
+    {
+      "name": "Helix (Figure AI)",
+      "reason": "Modelo de robótica proprietário — hardware acoplado",
+      "card": "hw-005-02"
+    },
+    {
+      "name": "Swift ML API (Apple)",
+      "reason": "Plataforma Apple-only (macOS/iOS) — não aplicável ao Hermes",
+      "card": "app-005-02"
+    },
+    {
+      "name": "Container-darwin (Apple)",
+      "reason": "Ferramenta macOS-only para gerenciamento de containers",
+      "card": "arc-002-11"
+    },
+    {
+      "name": "Cohere North Mini Code",
+      "reason": "Já coberto pelo skill cohere-coding-agent existente",
+      "card": "arc-004-03"
+    }
+  ],
+  "summary": "3 novos skills criados e commitados no repositório hermes-2.0: Omnigent (orquestração multi-agente), GLM 5.2 (modelo chinês MIT), Gemma 4 12B (multimodal encoder-free). 28 tecnologias já existentes como skills foram confirmadas. 13 tecnologias foram skipadas por não serem implementáveis."
 }
