@@ -1,105 +1,56 @@
 {
-  "scan_date": "2026-06-14",
-  "scanned_editions": ["001", "002", "003", "004", "005"],
-  "total_cards_analyzed": 144,
-  "new_skills_created": [
-    {
-      "name": "omnigent",
-      "category": "autonomous-ai-agents",
-      "source_edition": "005",
-      "source_card": "arc-005-06",
-      "reason": "Databricks Omnigent — meta-harness open-source para orquestração de múltiplos agentes de código (Claude Code, Codex, OpenCode, Gemini CLI). Implementável como skill de delegação inteligente no Hermes."
-    },
-    {
-      "name": "glm-5-2",
-      "category": "mlops",
-      "source_edition": "005",
-      "source_card": "app-005-05",
-      "reason": "GLM 5.2 — modelo MoE 130B (12B ativos) da Zhipu AI, open-source (MIT), 1M tokens de contexto, foco em coding e raciocínio. Implementável como provider alternativo no Hermes."
-    },
-    {
-      "name": "gemma-4-12b",
-      "category": "mlops",
-      "source_edition": "004",
-      "source_card": "arc-004-07",
-      "reason": "Google DeepMind Gemma 4 12B — modelo multimodal encoder-free que processa texto, imagem, áudio e vídeo nativamente. Aberto, gratuito, roda em 16GB VRAM. Implementável como modelo local multimodal no Hermes."
-    }
+  "scan_timestamp": "2026-06-14T19:15:00",
+  "source": "TOP OF THE HOUR — IA, Edições #001-#005",
+  "total_cards_scanned": 148,
+  "technologies_identified": 25,
+  "already_existing_skills_skipped": 18,
+  "new_skills_created": 2,
+  "existing_skills_updated": 2,
+  "scan_summary": {
+    "new_skills": [
+      {
+        "name": "flash-routing",
+        "category": "mlops",
+        "description": "Apple Flash-Routing — inference optimization technique that runs 20B models on-device without DRAM access",
+        "source": "Ed.#001 — Apple Leva 20B Parâmetros para o Dispositivo Sem Tocar na DRAM com Flash-Routing"
+      },
+      {
+        "name": "neuron-agentic-dev",
+        "category": "mlops",
+        "description": "AWS Neuron Agentic Development — automated kernel optimization for Trainium replacing manual CUDA tuning",
+        "source": "Ed.#002 — AWS Neuron Agentic Development: Adeus ao Ajuste Manual de Kernels para Trainium"
+      }
+    ],
+    "existing_skills_updated": [
+      {
+        "name": "karpathy",
+        "update": "Added autoresearch section — Karpathy's 630-line autonomous ML research loop tool",
+        "source": "Ed.#005 — Karpathy Lança 'autoresearch': 630 Linhas que Transformam Agentes de IA em Cientistas Autônomos de ML"
+      },
+      {
+        "name": "huggingface-hub",
+        "update": "Added Agent-Optimized Mode section — hf CLI redesigned for agent interaction with --agent flag and JSON output",
+        "source": "Ed.#002/#005 — Design do hf CLI como Interface Otimizada para Agentes + HuggingFace Lança CLI Otimizada"
+      }
+    ],
+    "already_existing_skills_skipped": [
+      "apache-burr", "cohere-coding-agent", "mimo-code", "headroom",
+      "mempalace", "projectmem", "nemoclaw", "openenv", "maxproof",
+      "olmo-eval", "vibevoice", "gemma-4-12b", "diffusiongemma",
+      "opencv-5", "open-source-landscape-research", "karpathy",
+      "open-notebook", "grpo"
+    ]
+  },
+  "not_implementable_skipped": [
+    {"name": "HBM4/HBM3E", "reason": "Hardware (memory technology)"},
+    {"name": "Blackwell/Rubin/GB300/B300", "reason": "Hardware (GPU architecture)"},
+    {"name": "NVL72/Grace Blackwell/DGX Spark/DGX Station", "reason": "Hardware (systems)"},
+    {"name": "AI Factory", "reason": "Concept/strategy, not implementable"},
+    {"name": "Spectrum-X/Quantum-X", "reason": "Networking hardware"},
+    {"name": "Claude Fable 5/GPT-5.5/Grok 4", "reason": "Proprietary API models (no direct tool)"},
+    {"name": "Mistral AI/Microsoft/Anthropic strategy cards", "reason": "Market strategy, no code"},
+    {"name": "Runway Gen/Veo 3/Sora/Pika", "reason": "Proprietary video generation platforms"}
   ],
-  "already_skilled_technologies": [
-    "agent-reach", "agents-last-exam", "apache-burr", "blogwatcher",
-    "codebase-pack", "codebase-rag", "cohere-coding-agent",
-    "confidential-computing", "diffusiongemma", "eevee", "harness-1",
-    "headroom", "llm-wiki", "mempalace", "mimo-code", "nemoclaw",
-    "nemotron-35-asr", "open-llm-vtuber", "open-notebook", "opencv-5",
-    "openenv", "projectmem", "reasonalloc", "roboflow-supervision",
-    "serge-code-review", "skillopt", "taste-skill", "vibevoice"
-  ],
-  "skipped_technologies": [
-    {
-      "name": "Anthropic Conway",
-      "reason": "Rumored/unreleased platform — sem código disponível",
-      "card": "app-001-08"
-    },
-    {
-      "name": "KAN in FPGAs",
-      "reason": "Hardware específico (FPGA) — não implementável como skill de software",
-      "card": "hw-001-06"
-    },
-    {
-      "name": "Flash-Routing (Apple)",
-      "reason": "Arquitetura de hardware proprietária — não implementável",
-      "card": "arc-001-03"
-    },
-    {
-      "name": "NVFP4 / DeepSeek-V4-Pro",
-      "reason": "Otimização de hardware NVIDIA Blackwell — específica de GPU",
-      "card": "arc-005-04"
-    },
-    {
-      "name": "Perplexity Hybrid Router",
-      "reason": "Conceito apresentado, sem código open-source disponível",
-      "card": "arc-005-03"
-    },
-    {
-      "name": "RevEng.AI",
-      "reason": "Startup com rodada de investimento — sem produto aberto disponível",
-      "card": "str-004-06"
-    },
-    {
-      "name": "RSI (Recursive Self-Improvement)",
-      "reason": "Técnica de pesquisa sem implementação prática disponível",
-      "card": "app-004-07"
-    },
-    {
-      "name": "Microsoft MAI-Thinking-1",
-      "reason": "Modelo proprietário Microsoft — não open-source",
-      "card": "arc-005-02"
-    },
-    {
-      "name": "Pool (screenshot-to-action)",
-      "reason": "App mobile, não CLI — sem API pública",
-      "card": "app-003-10"
-    },
-    {
-      "name": "Helix (Figure AI)",
-      "reason": "Modelo de robótica proprietário — hardware acoplado",
-      "card": "hw-005-02"
-    },
-    {
-      "name": "Swift ML API (Apple)",
-      "reason": "Plataforma Apple-only (macOS/iOS) — não aplicável ao Hermes",
-      "card": "app-005-02"
-    },
-    {
-      "name": "Container-darwin (Apple)",
-      "reason": "Ferramenta macOS-only para gerenciamento de containers",
-      "card": "arc-002-11"
-    },
-    {
-      "name": "Cohere North Mini Code",
-      "reason": "Já coberto pelo skill cohere-coding-agent existente",
-      "card": "arc-004-03"
-    }
-  ],
-  "summary": "3 novos skills criados e commitados no repositório hermes-2.0: Omnigent (orquestração multi-agente), GLM 5.2 (modelo chinês MIT), Gemma 4 12B (multimodal encoder-free). 28 tecnologias já existentes como skills foram confirmadas. 13 tecnologias foram skipadas por não serem implementáveis."
+  "total_new_skills": 2,
+  "total_updated_skills": 2
 }
