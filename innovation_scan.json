@@ -1,169 +1,197 @@
 {
-  "timestamp": "2026-06-12T19:15:00.000000",
-  "edition": "003",
-  "cards_scanned": 115,
-  "new_skills": 4,
+  "timestamp": "2026-06-14T07:50:00.000000",
+  "edition": "004",
+  "cards_scanned": 116,
+  "new_skills": 8,
+  "existing_skills_confirmed": 17,
+  "cascade_coverage": {
+    "hardware": 27,
+    "arquitetura": 43,
+    "apps": 32,
+    "estrategia": 24
+  },
   "findings": [
     {
-      "tech": "serge-code-review",
-      "title": "Serge: Revisão de Código com IA Nativa do GitHub — HuggingFace Lança Ferramenta Open-Source para PRs",
+      "tech": "reasonalloc",
+      "title": "ReasonAlloc — Hierarchical KV Cache Allocation",
       "confidence": "high",
       "skill_created": true,
-      "reason": "HuggingFace open-source AI code review tool for GitHub PRs. Automated bug detection, style checks, and security analysis. Complements existing github-code-review skill."
+      "reason": "KV cache memory optimization (60% reduction) compatible with vLLM/TensorRT-LLM. Essential for reasoning models with long chains-of-thought. New skill created."
     },
     {
-      "tech": "open-llm-vtuber",
-      "title": "Open-LLM-VTuber: Fale com Qualquer LLM com Voz, Interrupção e Avatar 3D em Tempo Real",
+      "tech": "eevee",
+      "title": "EEVEE — Test-Time Prompt Learning for Self-Improving Agents",
       "confidence": "high",
       "skill_created": true,
-      "reason": "Open-source voice interaction platform supporting any LLM, interruption, Live2D avatar, emotion TTS. Full local execution. Reference architecture for Hermes voice pipeline."
+      "reason": "Test-time prompt learning paradigm. Agents learn to adjust prompts during execution. Directly applicable to Hermes multi-agent systems. New skill created."
     },
     {
-      "tech": "nemotron-35-asr",
-      "title": "NVIDIA Nemotron 3.5 ASR: Fine-Tuning para Reconhecimento de Fala Multilíngue",
+      "tech": "projectmem",
+      "title": "PROJECTMEM — Local Event-Sourced Memory for Coding Agents",
       "confidence": "high",
       "skill_created": true,
-      "reason": "NVIDIA open-source ASR model fine-tunable with ~10 hours of audio. Multilingual, local execution. Alternative to Whisper/Google STT for Hermes voice pipeline."
+      "reason": "Local-first event-sourced memory architecture. Each agent action becomes immutable event. No external API dependency. Valuable design pattern for Hermes memory. New skill created."
     },
     {
-      "tech": "minimax-m3",
-      "title": "MiniMax M3: Atenção Esparsa Supera Modelos Maiores em Eficiência — Nova Arquitetura para a Era de Agentes",
+      "tech": "nemoclaw",
+      "title": "NVIDIA NemoClaw — Secure Coding Agents with Sandboxing",
+      "confidence": "high",
+      "skill_created": true,
+      "reason": "NVIDIA platform for autonomous coding agents with sandboxing, human approval policies, audit logging. Framework for enterprise-grade agent safety. New skill created."
+    },
+    {
+      "tech": "maxproof",
+      "title": "Maxproof — Formal Verification Framework for AI Systems",
       "confidence": "medium",
       "skill_created": true,
-      "reason": "Open-source sparse attention LLM with O(n) context scaling vs O(n²) in traditional transformers. Beats GPT-4 in efficiency. Model accessible via HuggingFace."
+      "reason": "Formal verification framework based on maximum likelihood logic. Theoretical guarantees for critical system correctness. Watch for production adoption. New skill created."
     },
     {
-      "tech": "headroom",
-      "title": "headroom: Compressão de Tool Output para LLM — Edições #002-#003",
+      "tech": "agents-last-exam",
+      "title": "Agents' Last Exam — UC Berkeley Agent Benchmark",
       "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill. Confirmed as existing."
+      "skill_created": true,
+      "reason": "UC Berkeley benchmark for real-world agent capabilities (programming, research, web nav, tools). More relevant than traditional Q&A benchmarks for evaluating Hermes. New skill created."
     },
     {
-      "tech": "vibevoice",
-      "title": "Microsoft VibeVoice — Edições #002-#003",
+      "tech": "confidential-computing",
+      "title": "NVIDIA Confidential Computing — TEE Secure Inference",
       "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (vibevoice). Confirmed as existing."
+      "skill_created": true,
+      "reason": "TEE-based secure inference. Data encrypted during processing. Used by Apple Private Cloud Compute. Potential EU AI Act requirement. Privacy routing for Hermes providers. New skill created."
     },
     {
-      "tech": "agent-reach",
-      "title": "Agent-Reach — Edição #002",
+      "tech": "triton-inference-server",
+      "title": "NVIDIA Triton Inference Server — 2-5x Throughput Improvement",
       "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (agent-reach). Confirmed as existing."
-    },
-    {
-      "tech": "mempalace",
-      "title": "MemPalace — Edição #002",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (mempalace). Confirmed as existing."
-    },
-    {
-      "tech": "open-notebook",
-      "title": "open-notebook: NotebookLM Open-Source — Edição #002",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (open-notebook under research). Confirmed."
-    },
-    {
-      "tech": "openenv",
-      "title": "OpenEnv: RL para Agentes — Edição #002",
-      "confidence": "medium",
-      "skill_created": false,
-      "reason": "Already has skill (openenv). Confirmed."
-    },
-    {
-      "tech": "taste-skill",
-      "title": "taste-skill — Edição #002",
-      "confidence": "medium",
-      "skill_created": false,
-      "reason": "Already has skill (taste-skill). Confirmed."
-    },
-    {
-      "tech": "harness-1",
-      "title": "Harness-1: Agente de Busca — Edição #001",
-      "confidence": "medium",
-      "skill_created": false,
-      "reason": "Already has skill (harness-1 under research). Confirmed."
+      "skill_created": true,
+      "reason": "Production-grade inference server. Dynamic batching, model ensembles, concurrent execution. 2-5x throughput without hardware change. Cost-per-token optimization for Hermes. New skill created."
     },
     {
       "tech": "diffusiongemma",
-      "title": "DiffusionGemma — Edição #001",
+      "title": "DiffusionGemma — Google Parallel Text Generation",
       "confidence": "high",
       "skill_created": false,
       "reason": "Already has skill (diffusiongemma under mlops). Confirmed."
     },
     {
       "tech": "opencv-5",
-      "title": "OpenCV 5 — Edição #001",
+      "title": "OpenCV 5 — Computer Vision Leap",
       "confidence": "high",
       "skill_created": false,
       "reason": "Already has skill (opencv-5 under mlops). Confirmed."
     },
     {
-      "tech": "roboflow-supervision",
-      "title": "roboflow/supervision — Edição #002",
-      "confidence": "high",
-      "skill_created": false,
-      "reason": "Already has skill (roboflow-supervision under mlops). Confirmed."
-    },
-    {
       "tech": "apache-burr",
-      "title": "Apache Burr — Edição #001",
+      "title": "Apache Burr — Framework for Auditable Agents",
       "confidence": "high",
       "skill_created": false,
       "reason": "Already has skill (apache-burr). Confirmed."
     },
     {
       "tech": "cohere-coding-agent",
-      "title": "Cohere Coding Agent — Edição #001",
+      "title": "Cohere Coding Agent 30B",
       "confidence": "high",
       "skill_created": false,
       "reason": "Already has skill (cohere-coding-agent). Confirmed."
     },
     {
+      "tech": "headroom",
+      "title": "headroom — Tool Output Compression",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (headroom). Confirmed."
+    },
+    {
+      "tech": "open-notebook",
+      "title": "open-notebook — Open-Source NotebookLM",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (open-notebook under research). Confirmed."
+    },
+    {
+      "tech": "agent-reach",
+      "title": "Agent-Reach — CLI Social Media Access",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (agent-reach). Confirmed."
+    },
+    {
+      "tech": "taste-skill",
+      "title": "taste-skill — Style Quality for AI Outputs",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (taste-skill). Confirmed."
+    },
+    {
+      "tech": "vibevoice",
+      "title": "Microsoft VibeVoice — Open-Source TTS",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (vibevoice). Confirmed."
+    },
+    {
+      "tech": "roboflow-supervision",
+      "title": "roboflow/supervision — CV Tools",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (roboflow-supervision). Confirmed."
+    },
+    {
+      "tech": "open-llm-vtuber",
+      "title": "Open-LLM-VTuber — Voice + Avatar",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (open-llm-vtuber). Confirmed."
+    },
+    {
+      "tech": "mempalace",
+      "title": "MemPalace — Memory System for Agents",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (mempalace). Confirmed."
+    },
+    {
+      "tech": "openenv",
+      "title": "OpenEnv — RL Environment for Agents",
+      "confidence": "medium",
+      "skill_created": false,
+      "reason": "Already has skill (openenv). Confirmed."
+    },
+    {
+      "tech": "olmo-eval",
+      "title": "olmo-eval — Allen AI Evaluation Workbench",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (olmo-eval). Confirmed."
+    },
+    {
+      "tech": "mimo-code",
+      "title": "MiMo Code — Xiaomi Coding Agent",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (mimo-code). Confirmed."
+    },
+    {
+      "tech": "skillopt",
+      "title": "Microsoft SkillOpt — Prompt Optimization",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (skillopt). Confirmed."
+    },
+    {
+      "tech": "harness-1",
+      "title": "Harness-1 — Search Agent",
+      "confidence": "high",
+      "skill_created": false,
+      "reason": "Already has skill (harness-1 under research). Confirmed."
+    },
+    {
       "tech": "huggingface-hub",
-      "title": "hf CLI Agent-Optimized — Edição #002",
+      "title": "hf CLI Agent-Optimized",
       "confidence": "medium",
       "skill_created": false,
       "reason": "Already has skill (huggingface-hub). Confirmed."
-    },
-    {
-      "tech": "lerobot-humanoid",
-      "title": "LeRobot Humanoid: Robô Humanóide Impresso em 3D Open-Source — Edição #003",
-      "confidence": "low",
-      "skill_created": false,
-      "reason": "Open-source 3D-printed humanoid robot for RL research. Not applicable to Hermes (Windows-based system, no robotics hardware). Watch for future Physical AI integrations."
-    },
-    {
-      "tech": "coinbase-mcp",
-      "title": "Coinbase MCP para Agentes de IA — Edição #003",
-      "confidence": "low",
-      "skill_created": false,
-      "reason": "MCP protocol for crypto trading by AI agents. Novel but niche for Hermes ecosystem. Watch for broader MCP financial tool adoption."
-    },
-    {
-      "tech": "projectmem",
-      "title": "PROJECTMEM: Event Sourcing Memory — Edição #002",
-      "confidence": "low",
-      "skill_created": false,
-      "reason": "Paper-based design pattern. No open-source implementation. Already covered by mempalace skill conceptually."
-    },
-    {
-      "tech": "reasonalloc",
-      "title": "ReasonAlloc: KV Cache Allocation — Edição #001",
-      "confidence": "low",
-      "skill_created": false,
-      "reason": "Paper-based optimization technique for KV cache. Requires vLLM/TensorRT-LLM integration. Not independently implementable as skill."
-    },
-    {
-      "tech": "open-r1",
-      "title": "Open Reproduction DeepSeek-R1 — Edição #002",
-      "confidence": "low",
-      "skill_created": false,
-      "reason": "Training pipeline reproduction. Training-oriented. Not a Hermes skill candidate."
     }
   ]
 }
