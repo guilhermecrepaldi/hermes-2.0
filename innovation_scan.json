@@ -1,49 +1,141 @@
 {
-  "scan_date": "2026-06-15T13:15:00-03:00",
   "edition": "006",
-  "total_cards_scanned": 35,
-  "findings": [
+  "scan_date": "2026-06-15T19:20:00-03:00",
+  "total_cards_scanned": 31,
+  "discoveries_valid": [
     {
-      "card_id": "arc-006-04",
-      "title": "OpenAI Lança gpt-oss: Modelos de Peso Aberto 120B/20B Sob Licença Apache 2.0",
-      "technology": "openai-gpt-oss",
-      "type": "open-weight-model",
-      "action": "skill_created",
-      "license": "Apache 2.0",
-      "urls": [
-        "https://huggingface.co/openai/gpt-oss-120b",
-        "https://huggingface.co/openai/gpt-oss-20b"
-      ],
-      "details": "Primeira família de modelos open-weight da OpenAI. gpt-oss-20B roda em hardware consumer via GGUF. Licença Apache 2.0 permite fine-tuning, modificação e redistribuição irrestrita."
+      "skill_name": "exoskeleton",
+      "card_id": "arc-006-19",
+      "card_title": "Exoskeleton: Framework Open-Source de Deterministic Harness para Despacho de Modelos em Produção",
+      "repo_url": "https://github.com/muxx/bitgn-ecom1-exoskeleton",
+      "description": "Deterministic engineering harness — model proposes, code disposes. Preflight checks, security blast radius, intent classification, evidence grounding.",
+      "criteria": "Open-source framework, CLI tool, implementável no Hermes"
     },
     {
-      "card_id": "arc-006-01",
-      "title": "NVIDIA Lança Nemotron 3 Ultra: 550B Parâmetros, 55B Ativos — Modelo Aberto para Agentes de Longa Duração",
-      "technology": "nemotron-3-ultra",
-      "type": "open-weight-model",
-      "action": "skill_created",
-      "license": "Open (weights + data + recipe)",
-      "urls": [
-        "https://huggingface.co/unsloth/NVIDIA-Nemotron-3-Ultra-550B-A55B-GGUF",
-        "https://research.nvidia.com/labs/nemotron/files/NVIDIA-Nemotron-3-Ultra-Technical-Report.pdf"
-      ],
-      "details": "Modelo 550B MoE (55B ativos) com arquitetura híbrida Mamba-Attention, 1M tokens de contexto, otimizado para agentes multipasso. Diferente do Nemotron 3.5 ASR existente."
+      "skill_name": "sia-self-improving-ai",
+      "card_id": "arc-006-16",
+      "card_title": "Trending no Hugging Face: Framework de Self-Improving AI que Atualiza Pesos e Arquitetura em Runtime",
+      "repo_url": "https://github.com/hexo-ai/sia",
+      "description": "SIA — Self-Improving AI framework. Autonomous improvement of model weights and agent architecture via LLM feedback loop.",
+      "criteria": "Open-source framework (MIT), Python, implementável no Hermes"
     }
   ],
-  "already_covered": [
-    {"card": "arc-006-02", "tech": "Cohere North Mini Code", "existing_skill": "cohere-coding-agent", "match": "exact"},
-    {"card": "arc-006-03", "tech": "DiffusionGemma RTX", "existing_skill": "diffusiongemma", "match": "exact"},
-    {"card": "arc-006-07", "tech": "Gemini Omni", "existing_skill": null, "reason": "Proprietário/API — modelo mundo Google, não open-source"},
-    {"card": "arc-006-08", "tech": "Google Antigravity 2.0", "existing_skill": "antigravity-20", "match": "exact"},
-    {"card": "hw-006-07", "tech": "NVIDIA NemoClaw + Confidential Computing", "existing_skill": "nemoclaw, confidential-computing", "match": "exact"},
-    {"card": "arc-006-09", "tech": "Microsoft MAI-Code-1-Flash", "existing_skill": null, "reason": "Modelo proprietário da Microsoft, sem pesos abertos disponíveis"},
-    {"card": "arc-006-10", "tech": "Meta Muse Spark", "existing_skill": null, "reason": "Modelo proprietário, não open-source — ruptura com Llama"},
-    {"card": "app-006-05", "tech": "Coinbase MCP Agent", "existing_skill": null, "reason": "Produto/SaaS sem API pública para integração"}
-  ],
-  "not_implementable": [
-    "Estratégia de mercado (cards str-006-01 a str-006-08): IPOs, regulação governamental, financiamento — sem tecnologia implementável",
-    "Hardware (cards hw-006-01 a hw-006-06): Vera Rubin, RTX Spark, DGX Station, ASUS GB300 — hardware físico, não implementável em software",
-    "Apps proprietários (app-006-01, app-006-04, app-006-06, app-006-07, app-006-08, app-006-09, app-006-10): features de produtos Apple/Robinhood/Meta/Google — sem API aberta"
-  ],
-  "summary": "Edição 006 produziu 2 novos skills: openai-gpt-oss e nemotron-3-ultra. 6 tecnologias já cobertas por skills existentes. 15 tecnologias não implementáveis (hardware, estratégia, produtos proprietários)."
+  "discoveries_skipped": [
+    {
+      "card_id": "arc-006-13",
+      "reason": "hf CLI já coberto pelo skill huggingface-hub existente"
+    },
+    {
+      "card_id": "hw-006-08",
+      "reason": "Notícia de hardware/infra — não implementável como skill"
+    },
+    {
+      "card_id": "hw-006-09",
+      "reason": "Anúncio de hardware — não implementável"
+    },
+    {
+      "card_id": "hw-006-10",
+      "reason": "Hardware/design — não implementável"
+    },
+    {
+      "card_id": "hw-006-11",
+      "reason": "Mercado financeiro — não implementável"
+    },
+    {
+      "card_id": "hw-006-12",
+      "reason": "Anúncio de silicon — não implementável"
+    },
+    {
+      "card_id": "hw-006-13",
+      "reason": "Regulação/estratégia — não implementável"
+    },
+    {
+      "card_id": "arc-006-11",
+      "reason": "API Google — produto SaaS, não implementável"
+    },
+    {
+      "card_id": "arc-006-12",
+      "reason": "Anúncio de modelo — sem código implementável"
+    },
+    {
+      "card_id": "arc-006-14",
+      "reason": "Paper DeepMind — código não liberado"
+    },
+    {
+      "card_id": "arc-006-15",
+      "reason": "Conceito/metodologia — LangGraph já coberto"
+    },
+    {
+      "card_id": "arc-006-17",
+      "reason": "Migração de dados — não implementável"
+    },
+    {
+      "card_id": "arc-006-18",
+      "reason": "Notícia/relatório — não implementável"
+    },
+    {
+      "card_id": "app-006-11",
+      "reason": "API paga xAI — produto SaaS"
+    },
+    {
+      "card_id": "app-006-12",
+      "reason": "Mudança de pricing — market news"
+    },
+    {
+      "card_id": "app-006-13",
+      "reason": "Aposentadoria de modelos — migration guide"
+    },
+    {
+      "card_id": "app-006-14",
+      "reason": "Comparativo de mercado — não implementável"
+    },
+    {
+      "card_id": "app-006-15",
+      "reason": "Feature de produto pago (Copilot)"
+    },
+    {
+      "card_id": "app-006-16",
+      "reason": "App iOS — não implementável no Hermes"
+    },
+    {
+      "card_id": "app-006-17",
+      "reason": "Notícia social — não implementável"
+    },
+    {
+      "card_id": "app-006-18",
+      "reason": "Notícia de governança — não implementável"
+    },
+    {
+      "card_id": "app-006-19",
+      "reason": "API Runway — produto pago"
+    },
+    {
+      "card_id": "str-006-09",
+      "reason": "Notícia de segurança — não implementável (Exoskeleton já coberto)"
+    },
+    {
+      "card_id": "str-006-10",
+      "reason": "Geopolítica — não implementável"
+    },
+    {
+      "card_id": "str-006-11",
+      "reason": "Proposta regulatória — não implementável"
+    },
+    {
+      "card_id": "str-006-12",
+      "reason": "Regulação — não implementável"
+    },
+    {
+      "card_id": "str-006-13",
+      "reason": "Notícia de mercado — não implementável"
+    },
+    {
+      "card_id": "str-006-14",
+      "reason": "Funding — não implementável"
+    },
+    {
+      "card_id": "str-006-15",
+      "reason": "Estudo/pesquisa — não implementável"
+    }
+  ]
 }
