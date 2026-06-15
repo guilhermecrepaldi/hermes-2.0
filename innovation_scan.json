@@ -1,83 +1,49 @@
 {
-  "scan_timestamp": "2026-06-15T07:15:00",
-  "source": "TOP OF THE HOUR — IA, Edições #005-#006",
-  "total_cards_scanned": 62,
-  "technologies_identified": 12,
-  "already_existing_skills_skipped": 6,
-  "new_skills_created": 6,
-  "existing_skills_updated": 0,
-  "scan_summary": {
-    "new_skills": [
-      {
-        "name": "dsx-os",
-        "category": "mlops",
-        "description": "DSX OS — sistema operacional modular open-source para AI Factories com workload scheduler MaxLP, lançado por Hugging Face e Sentient Foundation",
-        "source": "Ed.#005 — Hugging Face e Sentient Lançam DSX OS Open-Source: Sistema Operacional Modular para AI Factories"
-      },
-      {
-        "name": "antigravity-20",
-        "category": "autonomous-ai-agents",
-        "description": "Google Antigravity 2.0 — IDE desktop, CLI e SDK de agentes com orquestração multi-ferramenta, substituto do Gemini CLI",
-        "source": "Ed.#005 — Antigravity 2.0: Google Lança IDE Desktop, CLI e SDK de Agentes"
-      },
-      {
-        "name": "kimi-k26",
-        "category": "autonomous-ai-agents",
-        "description": "Kimi K2.6 — modelo open-source (Moonshot AI) com swarm de 300 sub-agentes coordenados e 4.000 passos para tarefas autônomas de longa duração",
-        "source": "Ed.#005 — Kimi K2.6 Open-Source: Modelo Chinês com Swarm de 300 Sub-Agentes"
-      },
-      {
-        "name": "rdma-mac-cluster",
-        "category": "mlops",
-        "description": "RDMA over Thunderbolt — Apple macOS 26.2 habilita RDMA sobre Thunderbolt para clusters de IA de alto desempenho com 2-4 Macs",
-        "source": "Ed.#005 — Apple macOS 26.2 Habilita RDMA sobre Thunderbolt: Clusters de IA de Alto Desempenho"
-      },
-      {
-        "name": "openclaw-agent",
-        "category": "autonomous-ai-agents",
-        "description": "OpenClaw — plataforma de agentes open-source multi-provider (Claude, OpenAI, DeepSeek) para automação programática",
-        "source": "Ed.#006 — Anthropic Reinstaura OpenClaw e Uso de Agentes de Terceiros no Claude"
-      },
-      {
-        "name": "copilot-coding-agent",
-        "category": "autonomous-ai-agents",
-        "description": "GitHub Copilot Coding Agent — agente autônomo que recebe issues, implementa código e abre PRs com integração nativa ao ecossistema GitHub",
-        "source": "Ed.#005 — Editor Wars 2026: Copilot Coding Agent Agora Recebe Issues e Abre PRs"
-      }
-    ],
-    "existing_skills_updated": [],
-    "already_existing_skills_skipped": [
-      "nemotron-35-asr",
-      "minimax-m3",
-      "cohere-coding-agent",
-      "mimo-code",
-      "omnigent",
-      "opencode"
-    ],
-    "existing_skills_cross_referenced_no_update_needed": [
-      "confidential-computing",
-      "reasonalloc"
-    ]
-  },
-  "not_implementable_skipped": [
-    {"name": "Pack Hunt multi-agent jailbreak technique", "reason": "Attack technique, not a tool/framework"},
-    {"name": "Fable 5 System Prompt analysis", "reason": "Methodology/analysis, no standalone tool"},
-    {"name": "GPT-5.5-Codex pricing", "reason": "Proprietary API model pricing, no tool"},
-    {"name": "Claude Agent SDK credit system", "reason": "Pricing change, no new tool"},
-    {"name": "Google Deepfake Call Detection", "reason": "Android-specific feature, not implementable"},
-    {"name": "Glasswing security program", "reason": "Enterprise security program, no code"},
-    {"name": "Stable Diffusion 4 Ultra", "reason": "Proprietary model (weights may be open but image gen not extensible)"},
-    {"name": "Agentforce/Salesforce", "reason": "Enterprise SaaS platform"},
-    {"name": "Apple App Intents iOS 27", "reason": "iOS-specific feature, not implementable"},
-    {"name": "Adobe Firefly Creative Agent", "reason": "Proprietary design tool"},
-    {"name": "Runway Gen-4.5", "reason": "Proprietary video generation"},
-    {"name": "Waymo robotaxis", "reason": "Hardware/autonomous vehicles"},
-    {"name": "Anthropic/OpenAI IPO strategy cards", "reason": "Market strategy, no code"},
-    {"name": "US/EU regulation cards", "reason": "Regulatory/policy, no tool"},
-    {"name": "C2PA content provenance standard", "reason": "Standard/regulation adaptável via skill existente"},
-    {"name": "ROI/Capex survey cards", "reason": "Market analysis only"},
-    {"name": "Skill shortage / talent gap", "reason": "Market observation only"}
+  "scan_date": "2026-06-15T13:15:00-03:00",
+  "edition": "006",
+  "total_cards_scanned": 35,
+  "findings": [
+    {
+      "card_id": "arc-006-04",
+      "title": "OpenAI Lança gpt-oss: Modelos de Peso Aberto 120B/20B Sob Licença Apache 2.0",
+      "technology": "openai-gpt-oss",
+      "type": "open-weight-model",
+      "action": "skill_created",
+      "license": "Apache 2.0",
+      "urls": [
+        "https://huggingface.co/openai/gpt-oss-120b",
+        "https://huggingface.co/openai/gpt-oss-20b"
+      ],
+      "details": "Primeira família de modelos open-weight da OpenAI. gpt-oss-20B roda em hardware consumer via GGUF. Licença Apache 2.0 permite fine-tuning, modificação e redistribuição irrestrita."
+    },
+    {
+      "card_id": "arc-006-01",
+      "title": "NVIDIA Lança Nemotron 3 Ultra: 550B Parâmetros, 55B Ativos — Modelo Aberto para Agentes de Longa Duração",
+      "technology": "nemotron-3-ultra",
+      "type": "open-weight-model",
+      "action": "skill_created",
+      "license": "Open (weights + data + recipe)",
+      "urls": [
+        "https://huggingface.co/unsloth/NVIDIA-Nemotron-3-Ultra-550B-A55B-GGUF",
+        "https://research.nvidia.com/labs/nemotron/files/NVIDIA-Nemotron-3-Ultra-Technical-Report.pdf"
+      ],
+      "details": "Modelo 550B MoE (55B ativos) com arquitetura híbrida Mamba-Attention, 1M tokens de contexto, otimizado para agentes multipasso. Diferente do Nemotron 3.5 ASR existente."
+    }
   ],
-  "total_new_skills": 6,
-  "total_updated_skills": 0
+  "already_covered": [
+    {"card": "arc-006-02", "tech": "Cohere North Mini Code", "existing_skill": "cohere-coding-agent", "match": "exact"},
+    {"card": "arc-006-03", "tech": "DiffusionGemma RTX", "existing_skill": "diffusiongemma", "match": "exact"},
+    {"card": "arc-006-07", "tech": "Gemini Omni", "existing_skill": null, "reason": "Proprietário/API — modelo mundo Google, não open-source"},
+    {"card": "arc-006-08", "tech": "Google Antigravity 2.0", "existing_skill": "antigravity-20", "match": "exact"},
+    {"card": "hw-006-07", "tech": "NVIDIA NemoClaw + Confidential Computing", "existing_skill": "nemoclaw, confidential-computing", "match": "exact"},
+    {"card": "arc-006-09", "tech": "Microsoft MAI-Code-1-Flash", "existing_skill": null, "reason": "Modelo proprietário da Microsoft, sem pesos abertos disponíveis"},
+    {"card": "arc-006-10", "tech": "Meta Muse Spark", "existing_skill": null, "reason": "Modelo proprietário, não open-source — ruptura com Llama"},
+    {"card": "app-006-05", "tech": "Coinbase MCP Agent", "existing_skill": null, "reason": "Produto/SaaS sem API pública para integração"}
+  ],
+  "not_implementable": [
+    "Estratégia de mercado (cards str-006-01 a str-006-08): IPOs, regulação governamental, financiamento — sem tecnologia implementável",
+    "Hardware (cards hw-006-01 a hw-006-06): Vera Rubin, RTX Spark, DGX Station, ASUS GB300 — hardware físico, não implementável em software",
+    "Apps proprietários (app-006-01, app-006-04, app-006-06, app-006-07, app-006-08, app-006-09, app-006-10): features de produtos Apple/Robinhood/Meta/Google — sem API aberta"
+  ],
+  "summary": "Edição 006 produziu 2 novos skills: openai-gpt-oss e nemotron-3-ultra. 6 tecnologias já cobertas por skills existentes. 15 tecnologias não implementáveis (hardware, estratégia, produtos proprietários)."
 }
