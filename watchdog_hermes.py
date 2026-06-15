@@ -91,31 +91,8 @@ def get_log_age_minutes() -> int:
 
 
 def recreate_startup_shortcut(name: str, target: str, args: str, description: str):
-    """Recreate a startup shortcut if missing."""
-    startup_dir = os.path.expandvars(
-        r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
-    )
-    shortcut_path = os.path.join(startup_dir, name)
-    if os.path.exists(shortcut_path):
-        return
-
-    ps_script = f"""
-$wshell = New-Object -ComObject WScript.Shell
-$s = $wshell.CreateShortcut('{shortcut_path}')
-$s.TargetPath = '{target}'
-$s.Arguments = '{args}'
-$s.Description = '{description}'
-$s.WorkingDirectory = 'D:\\projetos\\hermes-watchdog'
-$s.WindowStyle = 7
-$s.Save()
-"""
-    try:
-        run_hidden([
-            "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script
-        ])
-        log(f"Startup shortcut recriado: {name}", "SHORTCUT")
-    except Exception as e:
-        log(f"Erro ao recriar {name}: {e}", "SHORTCUT")
+    """DISABLED: Shortcut recreation removed to prevent watchdog loop."""
+    pass
 
 
 def main_loop():
