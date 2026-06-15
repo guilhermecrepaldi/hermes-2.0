@@ -1,56 +1,83 @@
 {
-  "scan_timestamp": "2026-06-14T19:15:00",
-  "source": "TOP OF THE HOUR — IA, Edições #001-#005",
-  "total_cards_scanned": 148,
-  "technologies_identified": 25,
-  "already_existing_skills_skipped": 18,
-  "new_skills_created": 2,
-  "existing_skills_updated": 2,
+  "scan_timestamp": "2026-06-15T07:15:00",
+  "source": "TOP OF THE HOUR — IA, Edições #005-#006",
+  "total_cards_scanned": 62,
+  "technologies_identified": 12,
+  "already_existing_skills_skipped": 6,
+  "new_skills_created": 6,
+  "existing_skills_updated": 0,
   "scan_summary": {
     "new_skills": [
       {
-        "name": "flash-routing",
+        "name": "dsx-os",
         "category": "mlops",
-        "description": "Apple Flash-Routing — inference optimization technique that runs 20B models on-device without DRAM access",
-        "source": "Ed.#001 — Apple Leva 20B Parâmetros para o Dispositivo Sem Tocar na DRAM com Flash-Routing"
+        "description": "DSX OS — sistema operacional modular open-source para AI Factories com workload scheduler MaxLP, lançado por Hugging Face e Sentient Foundation",
+        "source": "Ed.#005 — Hugging Face e Sentient Lançam DSX OS Open-Source: Sistema Operacional Modular para AI Factories"
       },
       {
-        "name": "neuron-agentic-dev",
-        "category": "mlops",
-        "description": "AWS Neuron Agentic Development — automated kernel optimization for Trainium replacing manual CUDA tuning",
-        "source": "Ed.#002 — AWS Neuron Agentic Development: Adeus ao Ajuste Manual de Kernels para Trainium"
-      }
-    ],
-    "existing_skills_updated": [
-      {
-        "name": "karpathy",
-        "update": "Added autoresearch section — Karpathy's 630-line autonomous ML research loop tool",
-        "source": "Ed.#005 — Karpathy Lança 'autoresearch': 630 Linhas que Transformam Agentes de IA em Cientistas Autônomos de ML"
+        "name": "antigravity-20",
+        "category": "autonomous-ai-agents",
+        "description": "Google Antigravity 2.0 — IDE desktop, CLI e SDK de agentes com orquestração multi-ferramenta, substituto do Gemini CLI",
+        "source": "Ed.#005 — Antigravity 2.0: Google Lança IDE Desktop, CLI e SDK de Agentes"
       },
       {
-        "name": "huggingface-hub",
-        "update": "Added Agent-Optimized Mode section — hf CLI redesigned for agent interaction with --agent flag and JSON output",
-        "source": "Ed.#002/#005 — Design do hf CLI como Interface Otimizada para Agentes + HuggingFace Lança CLI Otimizada"
+        "name": "kimi-k26",
+        "category": "autonomous-ai-agents",
+        "description": "Kimi K2.6 — modelo open-source (Moonshot AI) com swarm de 300 sub-agentes coordenados e 4.000 passos para tarefas autônomas de longa duração",
+        "source": "Ed.#005 — Kimi K2.6 Open-Source: Modelo Chinês com Swarm de 300 Sub-Agentes"
+      },
+      {
+        "name": "rdma-mac-cluster",
+        "category": "mlops",
+        "description": "RDMA over Thunderbolt — Apple macOS 26.2 habilita RDMA sobre Thunderbolt para clusters de IA de alto desempenho com 2-4 Macs",
+        "source": "Ed.#005 — Apple macOS 26.2 Habilita RDMA sobre Thunderbolt: Clusters de IA de Alto Desempenho"
+      },
+      {
+        "name": "openclaw-agent",
+        "category": "autonomous-ai-agents",
+        "description": "OpenClaw — plataforma de agentes open-source multi-provider (Claude, OpenAI, DeepSeek) para automação programática",
+        "source": "Ed.#006 — Anthropic Reinstaura OpenClaw e Uso de Agentes de Terceiros no Claude"
+      },
+      {
+        "name": "copilot-coding-agent",
+        "category": "autonomous-ai-agents",
+        "description": "GitHub Copilot Coding Agent — agente autônomo que recebe issues, implementa código e abre PRs com integração nativa ao ecossistema GitHub",
+        "source": "Ed.#005 — Editor Wars 2026: Copilot Coding Agent Agora Recebe Issues e Abre PRs"
       }
     ],
+    "existing_skills_updated": [],
     "already_existing_skills_skipped": [
-      "apache-burr", "cohere-coding-agent", "mimo-code", "headroom",
-      "mempalace", "projectmem", "nemoclaw", "openenv", "maxproof",
-      "olmo-eval", "vibevoice", "gemma-4-12b", "diffusiongemma",
-      "opencv-5", "open-source-landscape-research", "karpathy",
-      "open-notebook", "grpo"
+      "nemotron-35-asr",
+      "minimax-m3",
+      "cohere-coding-agent",
+      "mimo-code",
+      "omnigent",
+      "opencode"
+    ],
+    "existing_skills_cross_referenced_no_update_needed": [
+      "confidential-computing",
+      "reasonalloc"
     ]
   },
   "not_implementable_skipped": [
-    {"name": "HBM4/HBM3E", "reason": "Hardware (memory technology)"},
-    {"name": "Blackwell/Rubin/GB300/B300", "reason": "Hardware (GPU architecture)"},
-    {"name": "NVL72/Grace Blackwell/DGX Spark/DGX Station", "reason": "Hardware (systems)"},
-    {"name": "AI Factory", "reason": "Concept/strategy, not implementable"},
-    {"name": "Spectrum-X/Quantum-X", "reason": "Networking hardware"},
-    {"name": "Claude Fable 5/GPT-5.5/Grok 4", "reason": "Proprietary API models (no direct tool)"},
-    {"name": "Mistral AI/Microsoft/Anthropic strategy cards", "reason": "Market strategy, no code"},
-    {"name": "Runway Gen/Veo 3/Sora/Pika", "reason": "Proprietary video generation platforms"}
+    {"name": "Pack Hunt multi-agent jailbreak technique", "reason": "Attack technique, not a tool/framework"},
+    {"name": "Fable 5 System Prompt analysis", "reason": "Methodology/analysis, no standalone tool"},
+    {"name": "GPT-5.5-Codex pricing", "reason": "Proprietary API model pricing, no tool"},
+    {"name": "Claude Agent SDK credit system", "reason": "Pricing change, no new tool"},
+    {"name": "Google Deepfake Call Detection", "reason": "Android-specific feature, not implementable"},
+    {"name": "Glasswing security program", "reason": "Enterprise security program, no code"},
+    {"name": "Stable Diffusion 4 Ultra", "reason": "Proprietary model (weights may be open but image gen not extensible)"},
+    {"name": "Agentforce/Salesforce", "reason": "Enterprise SaaS platform"},
+    {"name": "Apple App Intents iOS 27", "reason": "iOS-specific feature, not implementable"},
+    {"name": "Adobe Firefly Creative Agent", "reason": "Proprietary design tool"},
+    {"name": "Runway Gen-4.5", "reason": "Proprietary video generation"},
+    {"name": "Waymo robotaxis", "reason": "Hardware/autonomous vehicles"},
+    {"name": "Anthropic/OpenAI IPO strategy cards", "reason": "Market strategy, no code"},
+    {"name": "US/EU regulation cards", "reason": "Regulatory/policy, no tool"},
+    {"name": "C2PA content provenance standard", "reason": "Standard/regulation adaptável via skill existente"},
+    {"name": "ROI/Capex survey cards", "reason": "Market analysis only"},
+    {"name": "Skill shortage / talent gap", "reason": "Market observation only"}
   ],
-  "total_new_skills": 2,
-  "total_updated_skills": 2
+  "total_new_skills": 6,
+  "total_updated_skills": 0
 }
