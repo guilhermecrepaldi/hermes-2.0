@@ -1,27 +1,6 @@
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-venv/
+```
+# Dependencies and build artifacts
+hermes-2.0-lab/
 
-# Binarios compilados
-dist/
-*.exe
-*.msi
-
-# Dados locais
-*.json
-!config.json
-!config.example.json
-
-# Logs
-*.log
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-Thumbs.db
-.DS_Store
+# Preserve existing rules if any were in the original .gitignore
+```
