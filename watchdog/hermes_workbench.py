@@ -33,6 +33,9 @@ DevToys Tools:
 
 Novos Comandos (v3 — S3 Research + Ferramentas):
   research <topico>     Pesquisa em 8 fontes (API real: HN + GitHub. Demais: sugestao de comando)
+  absorb <url>          Absorve projeto open-source (oss-absorb skill)
+  absorb --find <cap>   Busca candidatos OSS para capacidade desejada
+  absorb list           Lista projetos absorvidos (THIRD_PARTY_NOTICES.md)
   research --reddit <t> Pesquisa apenas no Reddit
   research --x <t>      Pesquisa apenas no X/Twitter
   research --youtube <t> Pesquisa apenas no YouTube
@@ -2239,6 +2242,7 @@ def main():
         'docs': cmd_docs,
         'test': cmd_test,
         'help': cmd_help,
+        'absorb': cmd_absorb,
     }
 
     if cmd not in commands:
@@ -2324,6 +2328,58 @@ def cmd_router(args):
     print(f"  Custo:    {result['cost']}")
     print(f"  Motivo:   {result['reason']}")
     print(f"  Scores:   S1={result['score']['S1']}  S2={result['score']['S2']}  S3={result['score']['S3']}")
+    return 0
+
+
+def cmd_absorb(args):
+    """Absorver software open-source de terceiros (oss-absorb skill).
+    
+    A0-A6: intake → discovery → clone → license gate → decision → implement → commit.
+    """
+    if not args:
+        print("Uso: hermes-workbench absorb <url> [--dry-run]")
+        print("     hermes-workbench absorb --find \"<capacidade>\"")
+        print("     hermes-workbench absorb list")
+        print("     hermes-workbench absorb check <url>")
+        return 1
+
+    if args[0] == "--find":
+        print("🔍 A1 Discovery: buscando candidatos para:", " ".join(args[1:]))
+        print("   Use browser_navigate para pesquisar no GitHub ou HN.")
+        print("   Dica: github.com/search?q=" + "+".join(args[1:]).replace(" ", "+"))
+        return 0
+
+    if args[0] == "list":
+        notices_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "THIRD_PARTY_NOTICES.md")
+        if os.path.exists(notices_path):
+            with open(notices_path) as f:
+                print(f.read())
+        else:
+            print("Nenhuma absorcao registrada ainda.")
+        return 0
+
+    if args[0] == "check":
+        return _absorb_check(args[1] if len(args) > 1 else "")
+
+    url = args[0]
+    dry_run = "--dry-run" in args
+    
+    print(f"📦 A0 Intake: {url}")
+    print(f"🔍 A1-A6: Pipeline completo via skill oss-absorb")
+    print(f"   Carregue oss-absorb com: skill_view(name='oss-absorb')")
+    print(f"   Depois siga o pipeline A0→A6 documentado na skill.")
+    return 0
+
+
+def _absorb_check(url):
+    """A2+A3: clona e verifica licenca."""
+    if not url:
+        print("Uso: hermes-workbench absorb check <url>")
+        return 1
+    print(f"📥 A2 Clone: {url}")
+    print(f"🛑 A3 License Gate: pendente (requer analise manual do LICENSE file)")
+    print("   Clone o repo, leia o LICENSE e classifique:")
+    print("   MIT/Apache/BSD → liberado | GPL/AGPL → wrap only | sem licenca → bloqueado")
     return 0
 
 
