@@ -1206,7 +1206,7 @@ def cmd_batch(args):
     print("=" * 60)
     print(f"\nTarefa: {task}")
     print(f"Roteamento: {routing['shell']} ({routing['model']})")
-    print(f"Custo: {routing['cost']}")
+    print(f"Custo: {routing.cost}")
     print(f"Variacoes: {n}")
     print()
 
