@@ -58,11 +58,15 @@ def project_load(path_or_url: str, target_dir: str = None) -> dict:
             target_dir = os.path.expanduser(f"~/hermes-projects/{repo_name}")
         
         try:
-            subprocess.run(
+            r = subprocess.run(
                 ["git", "clone", "--depth", "1", path_or_url, target_dir],
                 capture_output=True, text=True, timeout=120,
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
             )
+            if r.returncode != 0:
+                result["status"] = "error"
+                result["error"] = f"git clone falhou (exit {r.returncode}): {r.stderr.strip()[:300]}"
+                return result
             result["path"] = target_dir
             result["name"] = repo_name
             result["status"] = "cloned"

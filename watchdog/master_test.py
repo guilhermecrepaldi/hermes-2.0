@@ -2,7 +2,7 @@
 """Hermes 3.0 — Master Test (Python puro, zero dependencias de shell)"""
 import subprocess, sys, os, json
 
-WD = r"D:\projetos\hermes-watchdog"
+WD = os.path.dirname(os.path.abspath(__file__))
 PY = sys.executable
 PASS, FAIL, TOTAL = 0, 0, 0
 RESULTS = []
@@ -89,9 +89,10 @@ test("Compress", in_out([PY, f"{WD}\\hermes_workbench.py", "compress", "DEBUG x 
 
 # ═══ WATCHDOG (processos) ═══
 def proc_check(name):
-    r = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {name}", "/NH"],
-                      capture_output=True, text=True, timeout=10,
-                      creationflags=subprocess.CREATE_NO_WINDOW)
+    kwargs = {"capture_output": True, "text": True, "timeout": 10}
+    if os.name == "nt":
+        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+    r = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {name}", "/NH"], **kwargs)
     return name.lower() in r.stdout.lower()
 
 test("Watchdog wscript", proc_check("wscript.exe"))
@@ -99,9 +100,12 @@ test("Watchdog pythonw", proc_check("pythonw.exe"))
 test("Ollama rodando", proc_check("ollama.exe"))
 
 # ═══ VBS + FALLBACK ═══
-with open(os.path.join(WD, "watchdog_invisible.vbs")) as f:
-    vbs_content = f.read()
-test("VBS caminho absoluto", "pythonwPath" in vbs_content and "venv" in vbs_content)
+try:
+    with open(os.path.join(WD, "watchdog_invisible.vbs")) as f:
+        vbs_content = f.read()
+    test("VBS caminho absoluto", "pythonwPath" in vbs_content and "venv" in vbs_content)
+except FileNotFoundError:
+    test("VBS caminho absoluto", False, "watchdog_invisible.vbs nao encontrado")
 
 cfg_path = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'hermes', 'config.yaml')
 if os.path.exists(cfg_path):

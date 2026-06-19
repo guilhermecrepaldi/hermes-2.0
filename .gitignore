@@ -1,13 +1,27 @@
-# Sensitive data
-*.key
-*.pem
-.env
-.env.*
-config.yaml
-*.log
+# Python
 __pycache__/
-*.pyc
-.DS_Store
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Binarios compilados
+dist/
+*.exe
+*.msi
+
+# Dados locais
+*.json
+!config.json
+!config.example.json
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
 Thumbs.db
-*.bak
-node_modules/
+.DS_Store

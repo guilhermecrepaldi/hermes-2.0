@@ -8,7 +8,7 @@ Uso: python s1_router.py "descricao da tarefa"
 Retorno: "S1" | "S2" | "S3" + justificativa
 """
 import sys
-import json
+import sys, re, json
 
 # Tarefas que S1 (Ollama/qwen2.5-coder:7b) pode fazer bem
 S1_CAPABILITIES = {
@@ -63,10 +63,14 @@ S3_CAPABILITIES = {
 def classify_task(task: str) -> dict:
     task_lower = task.lower()
     
+    # Match com word boundary - evita falsos positivos como 'cat' em 'catalogar'
+    def kw_match(keyword):
+        return bool(re.search(rf"\b{re.escape(keyword)}\b", task_lower))
+    
     # Count keyword matches for each shell
-    s1_score = sum(1 for kw in S1_CAPABILITIES["keywords"] if kw in task_lower)
-    s2_score = sum(1 for kw in S2_CAPABILITIES["keywords"] if kw in task_lower)
-    s3_score = sum(1 for kw in S3_CAPABILITIES["keywords"] if kw in task_lower)
+    s1_score = sum(1 for kw in S1_CAPABILITIES["keywords"] if kw_match(kw))
+    s2_score = sum(1 for kw in S2_CAPABILITIES["keywords"] if kw_match(kw))
+    s3_score = sum(1 for kw in S3_CAPABILITIES["keywords"] if kw_match(kw))
     
     # Decision logic
     if s3_score > s2_score and s3_score > s1_score and s3_score > 0:

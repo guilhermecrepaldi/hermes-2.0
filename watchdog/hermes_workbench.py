@@ -32,7 +32,7 @@ DevToys Tools:
   timestamp [epoch]     Converte epoch para data/hora
 
 Novos Comandos (v3 — S3 Research + Ferramentas):
-  research <topico>     Pesquisa em 8 fontes (Reddit, X, YT, HN, GitHub, Web)
+  research <topico>     Pesquisa em 8 fontes (API real: HN + GitHub. Demais: sugestao de comando)
   research --reddit <t> Pesquisa apenas no Reddit
   research --x <t>      Pesquisa apenas no X/Twitter
   research --youtube <t> Pesquisa apenas no YouTube
@@ -809,7 +809,7 @@ def _print_tree(data, indent=0, prefix="", is_last=True, max_depth=6):
 # ══════════════════════════════════════════════════════════════
 
 def cmd_research(args):
-    """Pesquisa um topico em 8 fontes com resultados REAIS via API."""
+    """Pesquisa um topico em 8 fontes (API real: HN+GitHub. Demais: sugestao de browser_navigate)."""
     if not args:
         print("Uso: hermes-workbench research <topico>")
         print("  Pesquisa multi-fonte com resultados reais.")
