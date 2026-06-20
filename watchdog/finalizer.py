@@ -83,10 +83,18 @@ def fix_pending(todo: list) -> list:
     for item in todo:
         logger.info(f"Fix: {item['fix']} -> {item['detail']}")
         if item["fix"] == "commit":
-            run(["git", "add", "-A"])
-            run(["git", "commit", "-m", "auto: finalizer commit"])
-            r = run(["git", "push", "origin", "main"])
-            results.append({"item": item, "fixed": r["ok"], "detail": r["out"][:80] if r["ok"] else r["err"][:80]})
+            # Só commita arquivos .py, .sh, .toml, .yml, .md de config
+            # Ignora hermes-progress.md (muda sempre)
+            run(["git", "add", "watchdog/*.py", "tests/*.py",
+                 "*.sh", "pyproject.toml", ".github/workflows/*.yml",
+                 "SPEC_ARQUITETURA_HERMES.md", "hermes_loop.py"])
+            r = run(["git", "diff", "--cached", "--name-only"])
+            if r["ok"] and r["out"].strip():
+                run(["git", "commit", "-m", "auto: finalizer commit"])
+                run(["git", "push", "origin", "main"])
+                results.append({"item": item, "fixed": True, "detail": "Commit e push"})
+            else:
+                results.append({"item": item, "fixed": True, "detail": "Nada a commitar"})
         elif item["fix"] == "push":
             r = run(["git", "push", "origin", "main"])
             results.append({"item": item, "fixed": r["ok"], "detail": r["out"][:80] if r["ok"] else r["err"][:80]})
