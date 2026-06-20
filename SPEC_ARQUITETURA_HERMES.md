@@ -2,7 +2,25 @@
 # Arquitetura Agentica do Hermes 2.0 vs Fable 5 (Claude Code)
 # Objetivo: Aproximar nossa arquitetura ao padrão Fable 5 mantendo nossa identidade
 
-## Visão Geral
+## Estado Atual (20-Jun-2026)
+
+### ✅ Ja implementado (passo a passo com Fable 5)
+
+| Componente | Status | Arquivo | Detalhe |
+|---|---|---|---|
+| **Loop central < 20 linhas** | ✅ | `hermes_loop.py` | `while True` + handle + exit |
+| **Harness com permissoes** | ✅ | `core.py` | `HermesHarness` com validate |
+| **Roteamento economico IA local** | ✅ | `core.py` | Ollama primeiro, fallback cloud |
+| **Context Engineering** | ✅ | `engine.py` | `carregar_progresso()` integrado ao loop |
+| **Agent Loop + harness** | ✅ | `hermes_loop.py` | <20 linhas orquestracao |
+| **Hooks pre/post** | ✅ | `engine.py` | `HookManager` com setup_default |
+| **Checkpointing** | ✅ | `engine.py` | `CheckpointManager` save/list/compact |
+| **KV Cache sharing** | ✅ | `engine.py` | `KVCache` com TTL e compact |
+| **Initializer + Coding Agent** | ✅ | `engine.py` | `InitializerAgent.setup()` + `CodingAgent.plan()` |
+| **Subagent via worktree** | ✅ | `engine.py` | `criar_worktree()` / `remover_worktree()` |
+| **Auto-compaction checkpoints** | ✅ | `engine.py` | Mantem os 10 mais recentes |
+| **28 testes passando** | ✅ | `tests/` | core + economy + engine + router + workbench |
+| **CI verde** | ✅ | `.github/workflows/` | Lint + pytest
 
 O Fable 5 (Claude Code) demonstra que uma arquitetura de agente eficiente pode ser surpreendentemente simples:
 - **Loop central**: ~20 linhas de `while True` que orquestram tudo
