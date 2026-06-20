@@ -41,10 +41,12 @@ def check_pending() -> list:
     if not r["ok"]:
         todo.append({"type": "test", "detail": "Testes falhando", "fix": "pytest"})
 
-    # 2. Arquivos nao commitados?
+    # 2. Arquivos nao commitados? (ignora hermes-progress.md)
     r = run(["git", "status", "--short"])
     if r["ok"] and r["out"].strip():
-        todo.append({"type": "git", "detail": "Arquivos nao commitados", "fix": "commit"})
+        relevant = [l for l in r["out"].split("\\n") if l.strip() and "hermes-progress" not in l]
+        if relevant:
+            todo.append({"type": "git", "detail": "Arquivos nao commitados", "fix": "commit"})
 
     # 3. Remote atrasado?
     r = run(["git", "rev-list", "--count", "HEAD..origin/main"])
