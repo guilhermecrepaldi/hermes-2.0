@@ -51,16 +51,12 @@ def check_pending() -> list:
     if r["ok"] and r["out"].strip() and int(r["out"].strip()) > 0:
         todo.append({"type": "git", "detail": "Push pendente", "fix": "push"})
 
-    # 4. TODO/FIXME/HACK no codigo? (ignora comentarios de estrutura)
-    r = run(["grep", "-rn", "--include=*.py", "TODO\\|FIXME\\|HACK",
-             "watchdog/", "tests/", "hermes_loop.py"])
-    if r["ok"] and r["out"].strip():
-        # Filtra: so considera se tem descricao acionavel (nao estrutura)
-        lines = [l for l in r["out"].split("\\n") if l.strip() and "ignore" not in l.lower()]
-        # Ignora linhas que sao apenas nomes de metodos ou comentarios de bloco
-        real_todos = [l for l in lines if len(l) > 60]  # TODO verdadeiro tem contexto
-        if real_todos:
-            todo.append({"type": "code", "detail": f"TODOs: {real_todos[0][:60]}", "fix": "resolve"})
+    # 4. TODO/FIXME/HACK no codigo? (ignora o proprio finalizer)
+    r = run(["grep", "-rn", "--include=*.py", "-L", "finalizer.py",
+             "TODO\\|FIXME\\|HACK", "watchdog/", "tests/", "hermes_loop.py"])
+    if r["ok"] and r["out"].strip() and "finalizer" not in r["out"]:
+        lines = [l for l in r["out"].split("\\n") if l.strip()][:3]
+        todo.append({"type": "code", "detail": f"TODOs: {lines[0][:60]}", "fix": "resolve"})
 
     # 5. CI falhou?
     r = run(["gh", "run", "list", "--limit", "1",
