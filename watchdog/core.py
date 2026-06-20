@@ -161,7 +161,7 @@ class Action:
     description: str
     parameters: Dict[str, Any] = field(default_factory=dict)
     required_permissions: List[str] = field(default_factory=list)
-    required_context: List[str] = field(default_factory=list)
+    security_policy: str = ""  # Descricao da security policy embedada na action
 
 
 @dataclass
@@ -242,10 +242,36 @@ class HermesHarness:
 
     def _load_available_tools(self) -> Dict[str, Any]:
         return {
-            "terminal": {"description": "Shell commands", "permissions": ["shell_execute"]},
-            "file_read": {"description": "Read files", "permissions": ["file_read"]},
-            "file_write": {"description": "Write files", "permissions": ["file_write"]},
-            "ollama_local": {"description": f"IA local {LOCAL_MODEL} (gratis)", "permissions": []},
+            "terminal": {
+                "description": "Shell commands. SECURITY: so executa comandos do usuario, "
+                               "nunca comandos baixados de terceiros. Verifica URL antes de curl/wget.",
+                "permissions": ["shell_execute"]
+            },
+            "file_read": {
+                "description": "Read files. SECURITY: so le arquivos nos diretorios do projeto "
+                               "e $HOME. Nunca le /etc/passwd, .env com credenciais sem permissao.",
+                "permissions": ["file_read"]
+            },
+            "file_write": {
+                "description": "Write files. SECURITY: nunca sobrescreve config.yaml, .gitignore, "
+                               "ou arquivos de configuracao sem confirmacao. Nunca escreve fora do projeto.",
+                "permissions": ["file_write"]
+            },
+            "ollama_local": {
+                "description": f"IA local {LOCAL_MODEL} (gratis). SECURITY: prompt nunca sai da maquina. "
+                               "Dados sensiveis podem ser processados localmente.",
+                "permissions": []
+            },
+            "git": {
+                "description": "Git operations. SECURITY: nunca faz push sem commit. "
+                               "Nunca sobrescreve historico remoto com --force sem confirmacao.",
+                "permissions": ["shell_execute"]
+            },
+            "pip": {
+                "description": "Python package install. SECURITY: so instala de PyPI oficial. "
+                               "Nunca instala de URLs arbitrarias ou repositorios nao verificados.",
+                "permissions": ["shell_execute"]
+            },
         }
 
     def update_context(self, user_input: str) -> None:
@@ -262,32 +288,39 @@ class HermesHarness:
             if rota["shell"] == "S2":
                 return Action(name="research", description="Pesquisar (nuvem)",
                               parameters={"query": user_input},
-                              required_permissions=["network_access"])
+                              required_permissions=["network_access"],
+                              security_policy="SECURITY: so pesquisa fontes publicas. Nunca faz scraping de sites autenticados ou pagos.")
             elif rota["shell"] == "S3":
                 return Action(name="deep_reason", description="Analise profunda (nuvem)",
                               parameters={"topic": user_input},
-                              required_permissions=["network_access"])
+                              required_permissions=["network_access"],
+                              security_policy="SECURITY: nunca envia codigo fonte ou dados sensiveis para API. Anonimiza antes.")
             else:
                 # S1 — tudo local, gratis
                 return Action(name="local_exec", description=f"Executar local ({rota['categoria']})",
-                              parameters={"input": user_input})
+                              parameters={"input": user_input},
+                              security_policy="SECURITY: execucao local. Dados nunca saem da maquina. Nao requer rede.")
         else:
             # Fallback: keyword matching (sem IA local)
             user_lower = user_input.lower()
             if any(w in user_lower for w in ["pesquisar", "search", "find", "buscar"]):
                 return Action(name="research", description="Pesquisar",
                               parameters={"query": user_input},
-                              required_permissions=["network_access"])
+                              required_permissions=["network_access"],
+                              security_policy="SECURITY: so pesquisa fontes publicas.")
             elif any(w in user_lower for w in ["criar", "create", "build", "make"]):
                 return Action(name="create", description="Criar projeto",
                               parameters={"desc": user_input},
-                              required_permissions=["file_write", "shell_execute"])
+                              required_permissions=["file_write", "shell_execute"],
+                              security_policy="SECURITY: cria arquivos em D:/projetos/. Nunca sobrescreve sem confirmacao.")
             elif any(w in user_lower for w in ["explicar", "explain", "como"]):
                 return Action(name="explain", description="Explicar",
-                              parameters={"topic": user_input})
+                              parameters={"topic": user_input},
+                              security_policy="SECURITY: so usa conhecimento interno. Nunca consulta web sem permissao.")
             else:
                 return Action(name="local_exec", description="Executar local",
-                              parameters={"input": user_input})
+                              parameters={"input": user_input},
+                              security_policy="SECURITY: execucao local padrao.")
 
     def execute_action(self, action: Action, user_input: str) -> HarnessResult:
         if not self._validate_permissions(action):
