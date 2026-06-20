@@ -51,7 +51,7 @@ def ollama_generate(prompt: str, model: str = LOCAL_MODEL,
         }).encode()
         req = urllib.request.Request(OLLAMA_URL, data=payload,
                                      headers={"Content-Type": "application/json"})
-        resp = urllib.request.urlopen(req, timeout=30)
+        resp = urllib.request.urlopen(req, timeout=60)
         result = json.loads(resp.read())
         return result.get("response", "").strip()
     except Exception as e:
