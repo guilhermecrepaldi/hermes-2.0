@@ -1,11 +1,14 @@
-"""Hermes 2.0 — Dataclasses, tipos compartilhados e harness."""
+"""Hermes 2.0 — Dataclasses, tipos compartilhados, harness e roteamento economico."""
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List
 import os
+import json
+import subprocess
+import urllib.request
 from datetime import datetime
 
-# Get logger after possible setup (lazy import to avoid circular)
+
 def _get_logger():
     try:
         from logger import get_logger
@@ -14,6 +17,83 @@ def _get_logger():
         import logging
         return logging.getLogger(__name__)
 
+
+# ═══════════════════════════════════════════════
+# ROTEADOR ECONOMICO — IA Local (Ollama) primeiro
+# ═══════════════════════════════════════════════
+
+OLLAMA_URL = "http://localhost:11434/api/generate"
+LOCAL_MODEL = "qwen2.5-coder:7b"        # 58 tok/s, $0
+LOCAL_VISION = "qwen3-vl:4b"            # Visao, $0
+DEEPSEEK_FLASH = "deepseek-v4-flash"     # Nuvem, $0.15/1M
+DEEPSEEK_PRO = "deepseek-v4-pro"        # Nuvem, $0.50/1M
+
+
+def ollama_disponivel() -> bool:
+    """Verifica se o Ollama esta rodando localmente."""
+    try:
+        req = urllib.request.urlopen("http://localhost:11434/api/tags", timeout=2)
+        data = json.loads(req.read())
+        return len(data.get("models", [])) > 0
+    except Exception:
+        return False
+
+
+def ollama_generate(prompt: str, model: str = LOCAL_MODEL,
+                    max_tokens: int = 512) -> Optional[str]:
+    """Gera texto via Ollama local. Custo: $0."""
+    try:
+        payload = json.dumps({
+            "model": model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {"num_predict": max_tokens}
+        }).encode()
+        req = urllib.request.Request(OLLAMA_URL, data=payload,
+                                     headers={"Content-Type": "application/json"})
+        resp = urllib.request.urlopen(req, timeout=30)
+        result = json.loads(resp.read())
+        return result.get("response", "").strip()
+    except Exception as e:
+        return None
+
+
+def classificar_tarefa_local(tarefa: str) -> Dict[str, Any]:
+    """Usa IA local (gratis) para classificar a tarefa antes de usar API paga."""
+    prompt = (
+        "Classifique a tarefa abaixo em UMA das categorias:\n"
+        "- 'leitura': ler arquivos, buscar informacao, pesquisar\n"
+        "- 'codigo': escrever, editar, refatorar, debugar codigo\n"
+        "- 'shell': comandos de terminal, instalar, build, deploy\n"
+        "- 'arquitetura': planejar, desenhar, projetar, documentar\n"
+        "- 'pesado': analise complexa, seguranca, decisoes criticas\n\n"
+        f"Tarefa: {tarefa}\n\n"
+        "Responda apenas com a categoria, uma palavra."
+    )
+    resposta = ollama_generate(prompt, max_tokens=20)
+    if resposta:
+        categoria = resposta.strip().lower()
+        if categoria in ("leitura", "codigo", "shell"):
+            return {"shell": "S1", "modelo": LOCAL_MODEL,
+                    "custo": "$0,00 🆓", "categoria": categoria,
+                    "roteador": "local (Ollama)"}
+        elif categoria == "arquitetura":
+            return {"shell": "S2", "modelo": DEEPSEEK_FLASH,
+                    "custo": "~$0.15/M ☁️", "categoria": categoria,
+                    "roteador": "nuvem (DeepSeek Flash)"}
+        elif categoria == "pesado":
+            return {"shell": "S3", "modelo": DEEPSEEK_PRO,
+                    "custo": "~$0.50/M 🧠", "categoria": categoria,
+                    "roteador": "nuvem (DeepSeek Pro)"}
+    # Fallback: usa IA local mesmo se nao classificou
+    return {"shell": "S1", "modelo": LOCAL_MODEL,
+            "custo": "$0,00 🆓", "categoria": "fallback",
+            "roteador": "local (Ollama)"}
+
+
+# ═══════════════════════════════════════════════
+# DATACLASSES
+# ═══════════════════════════════════════════════
 
 @dataclass
 class RouterDecision:
@@ -25,6 +105,7 @@ class RouterDecision:
     score_s1: int = 0
     score_s2: int = 0
     score_s3: int = 0
+    router_source: str = "keyword"  # keyword | ollama
 
     def to_dict(self) -> dict:
         return {
@@ -33,6 +114,7 @@ class RouterDecision:
             "cost": self.cost,
             "reason": self.reason,
             "score": {"S1": self.score_s1, "S2": self.score_s2, "S3": self.score_s3},
+            "router": self.router_source,
         }
 
 
@@ -110,6 +192,10 @@ class HarnessResult:
     time_taken: float = 0.0
 
 
+# ═══════════════════════════════════════════════
+# SKILL LOADER
+# ═══════════════════════════════════════════════
+
 class SkillLoader:
     """Loads and manages available skills."""
 
@@ -127,8 +213,12 @@ class SkillLoader:
         return list(self.skills.keys())
 
 
+# ═══════════════════════════════════════════════
+# HARNESS FABLE 5 + ECONOMIA LOCAL
+# ═══════════════════════════════════════════════
+
 class HermesHarness:
-    """Main harness: permissions, context, memory, and tool execution.
+    """Main harness: permissions, context, memory, tool execution, roteamento economico.
     Complexity lives here (Fable 5 inspired)."""
 
     def __init__(self):
@@ -137,6 +227,11 @@ class HermesHarness:
         self.context = Context()
         self.permissions = self._load_default_permissions()
         self.tools = self._load_available_tools()
+        self._ollama_ok = ollama_disponivel()
+        if self._ollama_ok:
+            self.logger.info(f"Ollama disponivel: {LOCAL_MODEL} (58 tok/s, $0)")
+        else:
+            self.logger.warning("Ollama nao disponivel — toda classificacao vai para nuvem")
 
     def _load_default_permissions(self) -> Dict[str, bool]:
         return {
@@ -150,6 +245,7 @@ class HermesHarness:
             "terminal": {"description": "Shell commands", "permissions": ["shell_execute"]},
             "file_read": {"description": "Read files", "permissions": ["file_read"]},
             "file_write": {"description": "Write files", "permissions": ["file_write"]},
+            "ollama_local": {"description": f"IA local {LOCAL_MODEL} (gratis)", "permissions": []},
         }
 
     def update_context(self, user_input: str) -> None:
@@ -157,21 +253,41 @@ class HermesHarness:
         self.logger.debug(f"Context updated: {user_input[:50]}...")
 
     def choose_action(self, user_input: str) -> Action:
-        user_lower = user_input.lower()
-        if any(w in user_lower for w in ["pesquisar", "search", "find", "buscar"]):
-            return Action(name="research", description="Pesquisar",
-                          parameters={"query": user_input},
-                          required_permissions=["network_access"])
-        elif any(w in user_lower for w in ["criar", "create", "build", "make"]):
-            return Action(name="create", description="Criar projeto",
-                          parameters={"desc": user_input},
-                          required_permissions=["file_write", "shell_execute"])
-        elif any(w in user_lower for w in ["explicar", "explain", "como"]):
-            return Action(name="explain", description="Explicar",
-                          parameters={"topic": user_input})
+        """Escolhe acao usando IA local (gratis) para classificar, se disponivel."""
+        if self._ollama_ok:
+            # Roteia com IA local — custo $0
+            rota = classificar_tarefa_local(user_input)
+            self.logger.info(f"Roteamento local: {rota['shell']} ({rota['modelo']}) | {rota['custo']}")
+
+            if rota["shell"] == "S2":
+                return Action(name="research", description="Pesquisar (nuvem)",
+                              parameters={"query": user_input},
+                              required_permissions=["network_access"])
+            elif rota["shell"] == "S3":
+                return Action(name="deep_reason", description="Analise profunda (nuvem)",
+                              parameters={"topic": user_input},
+                              required_permissions=["network_access"])
+            else:
+                # S1 — tudo local, gratis
+                return Action(name="local_exec", description=f"Executar local ({rota['categoria']})",
+                              parameters={"input": user_input})
         else:
-            return Action(name="reason", description="Raciocinar",
-                          parameters={"topic": user_input})
+            # Fallback: keyword matching (sem IA local)
+            user_lower = user_input.lower()
+            if any(w in user_lower for w in ["pesquisar", "search", "find", "buscar"]):
+                return Action(name="research", description="Pesquisar",
+                              parameters={"query": user_input},
+                              required_permissions=["network_access"])
+            elif any(w in user_lower for w in ["criar", "create", "build", "make"]):
+                return Action(name="create", description="Criar projeto",
+                              parameters={"desc": user_input},
+                              required_permissions=["file_write", "shell_execute"])
+            elif any(w in user_lower for w in ["explicar", "explain", "como"]):
+                return Action(name="explain", description="Explicar",
+                              parameters={"topic": user_input})
+            else:
+                return Action(name="local_exec", description="Executar local",
+                              parameters={"input": user_input})
 
     def execute_action(self, action: Action, user_input: str) -> HarnessResult:
         if not self._validate_permissions(action):
@@ -180,8 +296,21 @@ class HermesHarness:
         if not self._validate_context(action):
             return HarnessResult(False, "Contexto insuficiente",
                                  error="Missing context")
+
+        # Se a acao for local (S1), usa IA local — $0
+        if action.name == "local_exec" and self._ollama_ok:
+            try:
+                resposta = ollama_generate(user_input, max_tokens=1024)
+                if resposta:
+                    return HarnessResult(True, resposta, data=resposta,
+                                         actions_taken=[action.name], tokens_used=0)
+                return HarnessResult(True, f"[IA local offline] Processando: {user_input}",
+                                     data=user_input, actions_taken=[action.name])
+            except Exception as e:
+                return HarnessResult(False, f"Erro local: {e}", error=str(e))
+
         try:
-            result = f"Acao {action.name} executada"
+            result = f"Acao {action.name} via {action.parameters.get('model', 'nuvem')}"
             return HarnessResult(True, result, data=result,
                                  actions_taken=[action.name])
         except Exception as e:
