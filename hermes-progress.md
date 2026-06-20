@@ -34,3 +34,16 @@
 - `hermes-progress.md` — este arquivo
 - `THIRD_PARTY_NOTICES.md` — atribuições OSS
 - `SPEC.md` — especificação do projeto
+
+- 2026-06-20 01:13: TEST -> testando progresso
+- 2026-06-20 01:13: CHECKPOINT -> test_unit_20260620_011351.json
+- 2026-06-20 01:13: INIT -> testar initializer
+- 2026-06-20 01:13: PLAN -> 1. criar funcao hello world; 2. Implementar com type hints; 3. Escrever testes p
+- 2026-06-20 01:17: TEST -> testando progresso
+- 2026-06-20 01:17: CHECKPOINT -> test_unit_20260620_011725.json
+- 2026-06-20 01:17: INIT -> testar initializer
+- 2026-06-20 01:17: PLAN -> 1. criar funcao hello world; 2. Implementar com type hints; 3. Escrever testes p
+- 2026-06-20 01:19: TEST -> testando progresso
+- 2026-06-20 01:19: CHECKPOINT -> test_unit_20260620_011941.json
+- 2026-06-20 01:19: INIT -> testar initializer
+- 2026-06-20 01:19: PLAN -> 1. criar funcao hello world; 2. Implementar com type hints; 3. Escrever testes p
