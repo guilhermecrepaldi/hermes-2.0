@@ -1,17 +1,14 @@
 # Hermes 2.0 — Config Essentials
 # Reaplicar apos update do Hermes Agent que resetar config.yaml
 # Uso: hermes config set agent.autoload_skills "..."
-#      (copiar linhas compression abaixo para config.yaml manualmente)
+#      hermes config set compression.threshold 0.35
+#      hermes config set compression.target_ratio 0.15
 
-# === AUTOLOAD SKILLS ===
-# Carregadas automaticamente em toda sessao:
-hermes config set agent.autoload_skills "neo-hermes,auto-executor,auto-healing,output-coeso,roteador-economico,spec-agent,taste-skill,hermes-hooks"
+## AUTOLOAD SKILLS (skill-router DEVE ser o primeiro)
+autoload_skills: skill-router,stack-docs,auto-executor,auto-healing,output-coeso,roteador-economico,spec-agent,taste-skill,design-system-references
 
-# === COMPRESSAO DE CONTEXTO ===
-# Abaixo de agent: no config.yaml, adicionar:
-compression:
-  enabled: true
-  threshold: 0.35
-  target_ratio: 0.15
-  protect_first_n: 3
-  protect_last_n: 20
+## COMPRESSION
+agent:
+  compression:
+    threshold: 0.35
+    target_ratio: 0.15
