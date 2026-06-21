@@ -1,7 +1,7 @@
 """Testes do Workbench CLI."""
+from pathlib import Path
 import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "watchdog"))
-
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
 def test_s1_router_importa():
     """Modulo s1_router deve importar sem erros."""
