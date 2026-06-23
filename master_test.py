@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Hermes 3.0 — Master Test (Python puro, zero dependencias de shell)"""
-import subprocess, sys, os, json
+import os
+import subprocess
+import sys
 
-WD = r"D:\projetos\hermes-watchdog"
+WD = os.path.dirname(os.path.abspath(__file__))
 PY = sys.executable
 PASS, FAIL, TOTAL = 0, 0, 0
 RESULTS = []
@@ -89,9 +91,10 @@ test("Compress", in_out([PY, f"{WD}\\hermes_workbench.py", "compress", "DEBUG x 
 
 # ═══ WATCHDOG (processos) ═══
 def proc_check(name):
-    r = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {name}", "/NH"],
-                      capture_output=True, text=True, timeout=10,
-                      creationflags=subprocess.CREATE_NO_WINDOW)
+    kwargs = {"capture_output": True, "text": True, "timeout": 10}
+    if os.name == "nt":
+        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+    r = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {name}", "/NH"], **kwargs)
     return name.lower() in r.stdout.lower()
 
 test("Watchdog wscript", proc_check("wscript.exe"))
@@ -99,9 +102,12 @@ test("Watchdog pythonw", proc_check("pythonw.exe"))
 test("Ollama rodando", proc_check("ollama.exe"))
 
 # ═══ VBS + FALLBACK ═══
-with open(os.path.join(WD, "watchdog_invisible.vbs")) as f:
-    vbs_content = f.read()
-test("VBS caminho absoluto", "pythonwPath" in vbs_content and "venv" in vbs_content)
+try:
+    with open(os.path.join(WD, "watchdog_invisible.vbs")) as f:
+        vbs_content = f.read()
+    test("VBS caminho absoluto", "pythonwPath" in vbs_content and "venv" in vbs_content)
+except FileNotFoundError:
+    test("VBS caminho absoluto", False, "watchdog_invisible.vbs nao encontrado")
 
 cfg_path = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'hermes', 'config.yaml')
 if os.path.exists(cfg_path):
@@ -118,7 +124,7 @@ test("Skill benchmark", os.path.exists(os.path.join(skill_base, "dogfood", "work
 
 # ═══ RESULTADO ═══
 print(f"\n{'='*60}")
-print(f"📊 MASTER TEST — RESULTADO FINAL")
+print("📊 MASTER TEST — RESULTADO FINAL")
 print(f"{'='*60}")
 print(f"\n  Total: {TOTAL}  |  ✅ PASS: {PASS}  |  ❌ FAIL: {FAIL}")
 print()
@@ -134,9 +140,9 @@ else:
     print(f"  ⚠️  {FAIL} falhas precisam ser corrigidas")
 
 print(f"{'='*60}")
-print(f"\nDominios testados:")
-print(f"  CLI Basico: 3/3  | Router: 2/2  | Explain: 2/2  | DevToys: 6/6")
-print(f"  Research: 2/2  | Convert: 1/1  | Memory: 3/3  | Docs: 1/1")
-print(f"  Batch: 1/1  | Templates: 6/6  | JTree/Panorama/Compress: 3/3")
-print(f"  Watchdog: 3/3  | VBS+Fallback: 2/2  | Skills: 2/2")
+print("\nDominios testados:")
+print("  CLI Basico: 3/3  | Router: 2/2  | Explain: 2/2  | DevToys: 6/6")
+print("  Research: 2/2  | Convert: 1/1  | Memory: 3/3  | Docs: 1/1")
+print("  Batch: 1/1  | Templates: 6/6  | JTree/Panorama/Compress: 3/3")
+print("  Watchdog: 3/3  | VBS+Fallback: 2/2  | Skills: 2/2")
 sys.exit(0 if FAIL == 0 else 1)

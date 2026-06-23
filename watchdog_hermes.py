@@ -5,10 +5,10 @@ Loop infinito a cada 5 minutos.
 Monitora Hermes (node.exe), Ollama e recria shortcuts.
 Executado via pythonw.exe - NUNCA abre console.
 """
+import json
 import os
 import subprocess
 import time
-import json
 from datetime import datetime
 from pathlib import Path
 
@@ -91,18 +91,41 @@ def get_log_age_minutes() -> int:
 
 
 def recreate_startup_shortcut(name: str, target: str, args: str, description: str):
-    """DISABLED: Shortcut recreation removed to prevent watchdog loop."""
-    pass
+    """Recreate a startup shortcut if missing."""
+    startup_dir = os.path.expandvars(
+        r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
+    )
+    shortcut_path = os.path.join(startup_dir, name)
+    if os.path.exists(shortcut_path):
+        return
+
+    ps_script = f"""
+$wshell = New-Object -ComObject WScript.Shell
+$s = $wshell.CreateShortcut('{shortcut_path}')
+$s.TargetPath = '{target}'
+$s.Arguments = '{args}'
+$s.Description = '{description}'
+$s.WorkingDirectory = 'D:\\projetos\\hermes-watchdog'
+$s.WindowStyle = 7
+$s.Save()
+"""
+    try:
+        run_hidden([
+            "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script
+        ])
+        log(f"Startup shortcut recriado: {name}", "SHORTCUT")
+    except Exception as e:
+        log(f"Erro ao recriar {name}: {e}", "SHORTCUT")
 
 
 def main_loop():
     log("Hermes Watchdog iniciado (modo pythonw, zero janelas)", "INFO")
-    
+
     while True:
         try:
             # ─── 1. HERMES HEALTH CHECK ───
             hermes_running = is_process_running("node.exe")
-            
+
             if not hermes_running:
                 save_state("idle", "hermes_not_running")
                 log("Hermes (node.exe) nao esta rodando", "IDLE")
@@ -112,13 +135,13 @@ def main_loop():
                 if log_age > 25:
                     log(f"TRAVADO: Log nao atualizado ha {log_age}min", "WARN")
                     save_state("recovery", f"killed_log_stale_{log_age}min")
-                    
+
                     # Kill frozen Hermes
                     run_hidden(["taskkill", "/F", "/IM", "node.exe"])
                     log("Hermes finalizado (taskkill /F node.exe)", "RECOVERY")
                 else:
                     save_state("healthy", "monitoring")
-            
+
             # ─── 2. OLLAMA CHECK ───
             if not os.path.exists(PAUSE_FLAG):
                 if not is_process_running("ollama.exe"):
@@ -138,10 +161,10 @@ def main_loop():
                 '/B "D:\\projetos\\hermes-watchdog\\shellz_tray_guardian.vbs"',
                 "Shellz Tray - Pausar/Retomar Ollama",
             )
-            
+
             # ─── 4. WAIT ───
             time.sleep(INTERVAL_SEC)
-            
+
         except Exception as e:
             log(f"ERRO no loop principal: {e}", "ERROR")
             time.sleep(30)
