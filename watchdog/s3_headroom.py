@@ -13,6 +13,9 @@ Funcionalidades:
 import json
 import os
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 import shutil
 import subprocess
 from collections import Counter
@@ -338,7 +341,9 @@ def solution_search(project_path: str, query: str, max_results: int = 5) -> list
             filepath = parts[0]
             try:
                 lineno = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
-            except: lineno = 0
+            except:
+                logger.debug("Failed to parse line number")
+                lineno = 0
             content = parts[-1] if len(parts) > 2 else ""
 
             # Calculate relevance (keyword match count)
@@ -395,7 +400,9 @@ def project_map(project_path: str, max_depth: int = 3) -> str:
         try:
             entries = sorted([e for e in path.iterdir() if e.name not in IGNORE and not e.name.startswith('.')],
                             key=lambda x: (not x.is_dir(), x.name.lower()))
-        except: return
+        except:
+            logger.debug("Failed to list directory")
+            return
 
         for i, entry in enumerate(entries):
             is_last = i == len(entries) - 1

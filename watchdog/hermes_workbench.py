@@ -65,6 +65,9 @@ import socket
 import sys
 import uuid
 from datetime import datetime, timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -690,6 +693,7 @@ def _dev_ip(args):
             ext_ip = urllib.request.urlopen("https://api.ipify.org", timeout=5).read().decode()
             print(f"  IP Externo: {ext_ip}")
         except:
+            logger.warning("Nao foi possivel determinar IP externo")
             print("  IP Externo: (nao foi possivel determinar)")
     except Exception as e:
         print(f"  ❌ Erro: {e}")
@@ -1798,7 +1802,9 @@ def _load_memory():
         try:
             with open(MEMORY_FILE, encoding='utf-8') as f:
                 return json.load(f)
-        except: pass
+        except:
+            logger.warning("Falha ao carregar memoria, retornando vazio")
+            pass
     return {"entries": [], "contexts": {}}
 
 def _save_memory(data):
@@ -1865,8 +1871,12 @@ def cmd_memory(args):
         if ctx_name not in data['contexts']:
             data['contexts'][ctx_name] = {}
         import json as _json
-        try: parsed = _json.loads(ctx_data); data['contexts'][ctx_name].update(parsed)
-        except: data['contexts'][ctx_name]['note'] = ctx_data
+        try:
+            parsed = _json.loads(ctx_data)
+            data['contexts'][ctx_name].update(parsed)
+        except json.JSONDecodeError:
+            logger.debug("Context data nao e JSON, salvando como nota")
+            data['contexts'][ctx_name]['note'] = ctx_data
         _save_memory(data)
         print(f"✅ Contexto '{ctx_name}' atualizado")
         return 0

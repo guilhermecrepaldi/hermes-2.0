@@ -15,6 +15,7 @@ from core import HermesHarness
 from engine import CheckpointManager, HookManager, salvar_progresso
 from healer import AutoHealer
 from intelligence import ProjectScanner
+from logger_pro import setup_hermes_logging
 from logger import get_logger
 from orchestrator import Orchestrator
 from proactive import ProactiveAnalyzer
@@ -42,6 +43,7 @@ class HermesLoop:
         self.conversation = []
 
         HookManager.setup_default()
+        setup_hermes_logging()
         CheckpointManager.auto_compact()
 
         self._auto_init()
