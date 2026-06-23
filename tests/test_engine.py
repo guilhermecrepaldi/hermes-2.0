@@ -1,13 +1,17 @@
 """Testes do Engine: progress, worktree, checkpoints, hooks, cache."""
+import sys
 from pathlib import Path
-import sys, os
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
 from engine import (
-    carregar_progresso, salvar_progresso,
-    HookManager, CheckpointManager, KVCache,
-    InitializerAgent, CodingAgent
+    CheckpointManager,
+    CodingAgent,
+    HookManager,
+    InitializerAgent,
+    KVCache,
+    carregar_progresso,
+    salvar_progresso,
 )
 
 

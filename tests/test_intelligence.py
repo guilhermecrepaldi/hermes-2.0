@@ -1,15 +1,18 @@
 """Testes do Intelligence Core — compactor, reasoning, scanner."""
-from pathlib import Path
 import sys
+from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
 from compactor import (
-    estimate_tokens, should_compact, compact_conversation,
-    _compact_assistant_message, get_compact_stats
+    _compact_assistant_message,
+    compact_conversation,
+    estimate_tokens,
+    get_compact_stats,
+    should_compact,
 )
-from reasoning import ReasoningEngine, ReasoningStep, Thought, Decision
 from intelligence import ProjectScanner
-
+from reasoning import ReasoningEngine
 
 # ═══════════════════════════════════════════════
 # COMPACTOR TESTS

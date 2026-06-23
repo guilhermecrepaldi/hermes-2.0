@@ -1,11 +1,10 @@
 """Testes do Error Mapping (inspirado free-claude-code)."""
+import sys
 from pathlib import Path
-import sys, os
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
-from error_mapping import (
-    map_error, format_error, ERROR_CATALOG
-)
+from error_mapping import ERROR_CATALOG, format_error, map_error
 
 
 def test_error_catalog_has_entries():

@@ -1,12 +1,12 @@
 """Testes do Auto-Healer, Task Decomposer, Semantic Memory."""
+import sys
 from pathlib import Path
-import sys, os
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
+from decomposer import SubTask, TaskDecomposer
 from healer import AutoHealer
-from decomposer import TaskDecomposer, SubTask
 from smemory import SemanticMemory
-
 
 # ═══════════════════════════════════════════════
 # AUTO-HEALER TESTS

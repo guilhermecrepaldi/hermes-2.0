@@ -1,6 +1,7 @@
 """Testes dos Launchers CLI."""
-from pathlib import Path
+import importlib.util
 import sys
+from pathlib import Path
 
 CLI_DIR = str(Path(__file__).resolve().parent.parent / "cli")
 WD_DIR = str(Path(__file__).resolve().parent.parent / "watchdog")
@@ -11,8 +12,8 @@ if WD_DIR not in sys.path:
     sys.path.insert(0, WD_DIR)
 
 # Import the launcher module directly
-import importlib.util
-spec = importlib.util.spec_from_file_location("launcher", 
+
+spec = importlib.util.spec_from_file_location("launcher",
     Path(__file__).resolve().parent.parent / "cli" / "hermes-launcher.py")
 launcher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(launcher)

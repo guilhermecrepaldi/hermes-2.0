@@ -1,12 +1,17 @@
 """Testes do Provider Registry (inspirado free-claude-code)."""
+import sys
 from pathlib import Path
-import sys, os
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
 from providers import (
-    CATALOG, get_provider, list_providers, list_free_providers,
-    select_best_provider, RateLimiter, ProviderTier, ProviderInfo,
-    check_ollama
+    CATALOG,
+    ProviderTier,
+    RateLimiter,
+    get_provider,
+    list_free_providers,
+    list_providers,
+    select_best_provider,
 )
 
 

@@ -1,6 +1,7 @@
 """Testes do Router S1/S2/S3."""
-import sys, os
+import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 from s1_router import classify_task
 

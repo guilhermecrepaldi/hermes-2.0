@@ -1,10 +1,14 @@
 """Testes do roteamento economico com IA local."""
+import sys
 from pathlib import Path
-import sys, os
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 from core import (
-    ollama_disponivel, classificar_tarefa_local,
-    LOCAL_MODEL, DEEPSEEK_FLASH, DEEPSEEK_PRO
+    DEEPSEEK_FLASH,
+    DEEPSEEK_PRO,
+    LOCAL_MODEL,
+    classificar_tarefa_local,
+    ollama_disponivel,
 )
 
 

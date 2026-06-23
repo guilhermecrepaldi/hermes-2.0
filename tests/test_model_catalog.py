@@ -1,11 +1,10 @@
 """Testes do Model Catalog + Launchers (free-claude-code inspired)."""
-from pathlib import Path
 import sys
+from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
-from model_catalog import (
-    build_catalog, get_models_json, suggested_model, list_by_tier, ModelInfo
-)
+from model_catalog import build_catalog, get_models_json, list_by_tier, suggested_model
 
 
 def test_catalog_has_models():

@@ -1,6 +1,7 @@
 """Testes da Admin UI (inspirado free-claude-code)."""
+import sys
 from pathlib import Path
-import sys, os
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
 from admin_ui import create_app

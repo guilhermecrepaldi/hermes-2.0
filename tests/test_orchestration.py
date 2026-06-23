@@ -1,12 +1,12 @@
 """Testes do Orchestrator, Reflector, Proactive Analyzer."""
-from pathlib import Path
 import sys
+from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
-from orchestrator import Orchestrator, OrchestratedTask, TaskStatus
-from reflector import Reflector, Reflection
+from orchestrator import Orchestrator, TaskStatus
 from proactive import ProactiveAnalyzer, Suggestion
-
+from reflector import Reflector
 
 # ═══════════════════════════════════════════════
 # ORCHESTRATOR TESTS
@@ -138,7 +138,7 @@ def test_proactive_get_summary():
 def test_proactive_security_check():
     """Deve detectar .env que nao seja .example."""
     p = ProactiveAnalyzer(str(Path(__file__).resolve().parent.parent))
-    suggestions = p.scan_all()
+    p.scan_all()
     # Should not crash on any project structure
 
 
