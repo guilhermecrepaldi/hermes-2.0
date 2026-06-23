@@ -1,6 +1,6 @@
 """Testes do Workbench CLI."""
 from pathlib import Path
-import sys, os
+import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
 def test_s1_router_importa():

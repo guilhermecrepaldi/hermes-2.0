@@ -1,6 +1,6 @@
 """Testes do Model Catalog + Launchers (free-claude-code inspired)."""
 from pathlib import Path
-import sys, os
+import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
 from model_catalog import (

@@ -1,6 +1,6 @@
 """Testes dos Launchers CLI."""
 from pathlib import Path
-import sys, os
+import sys
 
 CLI_DIR = str(Path(__file__).resolve().parent.parent / "cli")
 WD_DIR = str(Path(__file__).resolve().parent.parent / "watchdog")

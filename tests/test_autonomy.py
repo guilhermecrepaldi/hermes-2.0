@@ -3,9 +3,9 @@ from pathlib import Path
 import sys, os
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
-from healer import AutoHealer, HealingStrategy
+from healer import AutoHealer
 from decomposer import TaskDecomposer, SubTask
-from smemory import SemanticMemory, MemoryEntry
+from smemory import SemanticMemory
 
 
 # ═══════════════════════════════════════════════

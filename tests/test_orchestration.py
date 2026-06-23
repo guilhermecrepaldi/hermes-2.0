@@ -1,6 +1,6 @@
 """Testes do Orchestrator, Reflector, Proactive Analyzer."""
 from pathlib import Path
-import sys, os
+import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
 from orchestrator import Orchestrator, OrchestratedTask, TaskStatus

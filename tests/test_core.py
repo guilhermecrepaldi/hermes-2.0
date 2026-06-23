@@ -1,6 +1,6 @@
 """Testes dos modulos: core, config, logger, monitor."""
 from pathlib import Path
-import sys, os
+import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 def test_core_importa():
     from core import RouterDecision, ProjectInfo, ShellCapability

@@ -3,7 +3,7 @@ from pathlib import Path
 import sys, os
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
-from code_analyzer import CodeAnalyzer, FileAnalysis, FunctionInfo, ClassInfo, Dependency
+from code_analyzer import CodeAnalyzer
 
 
 ROOT = str(Path(__file__).resolve().parent.parent)

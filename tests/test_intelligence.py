@@ -1,6 +1,6 @@
 """Testes do Intelligence Core — compactor, reasoning, scanner."""
 from pathlib import Path
-import sys, os
+import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
 from compactor import (
