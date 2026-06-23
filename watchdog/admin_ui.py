@@ -2,10 +2,9 @@
 FastAPI app for configuring providers, viewing status, and managing settings.
 """
 from __future__ import annotations
-import json
+
 import os
 from pathlib import Path
-from typing import Optional
 
 try:
     from logger import get_logger
@@ -18,7 +17,7 @@ HERE = Path(__file__).resolve().parent
 
 # Provider registry
 try:
-    from providers import CATALOG, ProviderInfo, ProviderTier, check_ollama
+    from providers import CATALOG, check_ollama
     PROVIDERS_AVAILABLE = True
 except ImportError:
     PROVIDERS_AVAILABLE = False
@@ -26,9 +25,9 @@ except ImportError:
 
 def create_app():
     """Create FastAPI app for Admin UI."""
-    from fastapi import FastAPI, Request, Form
-    from fastapi.responses import HTMLResponse, JSONResponse
-    
+    from fastapi import FastAPI
+    from fastapi.responses import HTMLResponse
+
     app = FastAPI(title="Hermes Admin UI", version="0.2.0")
 
     def get_config():
@@ -67,7 +66,7 @@ def create_app():
         config = get_config()
         env_keys = get_env_keys()
         providers_html = ""
-        
+
         if PROVIDERS_AVAILABLE:
             for name, p in CATALOG.items():
                 if not p.enabled:
@@ -79,7 +78,7 @@ def create_app():
                         status_icon = "🟢" if ok else "🔴"
                     except Exception:
                         status_icon = "❓"
-                
+
                 providers_html += f"""
                 <div class="provider-card">
                     <div class="provider-header">
@@ -92,7 +91,7 @@ def create_app():
                     <div class="provider-detail">Key: {'<code>' + (env_keys.get(p.api_key_env, '❌ not set') if p.api_key_env else 'N/A') + '</code>' if p.requires_key else 'No key needed'}</div>
                 </div>
                 """
-        
+
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -126,7 +125,7 @@ def create_app():
 </head>
 <body>
     <h1>Hermes Admin</h1>
-    
+
     <div class="section">
         <h2>Status</h2>
         <div class="stat"><div class="stat-value">{len(CATALOG) if PROVIDERS_AVAILABLE else 0}</div><div class="stat-label">Providers</div></div>
@@ -147,7 +146,7 @@ def create_app():
     <div class="grid">
         {providers_html}
     </div>
-    
+
     <div class="section">
         <h2>API Keys</h2>
         <div style="font-size:13px; line-height:2">
