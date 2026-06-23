@@ -89,9 +89,6 @@ class HermesLoop:
                 self.task_count += 1
                 self.conversation.append({"role": "user", "content": user_input})
                 
-                # TELEMETRIA OBRIGATORIA — toda interacao
-                telemetry.record(user_input=user_input, action_taken="processing")
-
                 # 1. Context engineering
                 self.harness.update_context(user_input)
                 salvar_progresso("INPUT", user_input[:40])
@@ -107,7 +104,17 @@ class HermesLoop:
                 # 4. Choose and execute action (with auto-healing)
                 action = self.harness.choose_action(user_input)
                 result = self.harness.execute_action(action, user_input)
-
+                
+                # TELEMETRIA OBRIGATORIA — toda interacao
+                shell_name = getattr(action, 'name', '') if hasattr(action, 'name') else str(action)[:20]
+                telemetry.record(
+                    user_input=user_input,
+                    action_taken=shell_name,
+                    shell_used=shell_name,
+                    model_used=getattr(action, 'modelo', ''),
+                    provider=getattr(action, 'provider', ''),
+                    complexity=len(user_input) // 50 + 1,
+                )
                 # 5. Auto-heal if failed
                 if hasattr(result, 'success') and not result.success:
                     healed = self.healer.heal(

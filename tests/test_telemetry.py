@@ -80,8 +80,14 @@ def test_telemetry_fields():
         success=True,
         model_used="gpt-4",
         provider="openai",
-        tokens_used=500,
+        tokens_input=200,
+        tokens_output=300,
+        total_tokens=500,
         cost=0.01,
+        shell_used="S2_cheap",
+        api_endpoint="https://api.openai.com/v1/chat",
+        model_selected_by_shell="gpt-4-mini",
+        complexity=5,
     )
     entries = t.get_session_entries()
     last = entries[-1]
@@ -91,6 +97,14 @@ def test_telemetry_fields():
     assert last["success"] is True
     assert last["model_used"] == "gpt-4"
     assert last["provider"] == "openai"
+    assert last["tokens_input"] == 200
+    assert last["tokens_output"] == 300
+    assert last["total_tokens"] == 500
+    assert last["cost"] == 0.01
+    assert last["shell_used"] == "S2_cheap"
+    assert last["api_endpoint"] == "https://api.openai.com/v1/chat"
+    assert last["model_selected_by_shell"] == "gpt-4-mini"
+    assert last["complexity"] == 5
 
 
 def test_telemetry_summary():

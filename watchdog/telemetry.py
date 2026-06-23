@@ -32,8 +32,14 @@ class TelemetryEntry:
     error: Optional[str] = None
     model_used: str = ""
     provider: str = ""
-    tokens_used: int = 0
+    tokens_input: int = 0
+    tokens_output: int = 0
+    total_tokens: int = 0
     cost: float = 0.0
+    shell_used: str = ""  # S1_local | S2_cheap | S3_premium | S1_nuvem
+    api_endpoint: str = ""  # URL da API chamada
+    model_selected_by_shell: str = ""  # Modelo escolhido pelo shell
+    complexity: int = 0  # Complexidade da tarefa (1-10)
 
 
 class Telemetry:
@@ -80,8 +86,14 @@ class Telemetry:
                error: Optional[str] = None,
                model_used: str = "",
                provider: str = "",
-               tokens_used: int = 0,
+               tokens_input: int = 0,
+               tokens_output: int = 0,
+               total_tokens: int = 0,
                cost: float = 0.0,
+               shell_used: str = "",
+               api_endpoint: str = "",
+               model_selected_by_shell: str = "",
+               complexity: int = 0,
                ) -> None:
         """Registra uma interacao. NUNCA falha.
         
@@ -93,7 +105,7 @@ class Telemetry:
         entry = TelemetryEntry(
             timestamp=datetime.now(timezone.utc).isoformat(),
             session_id=self._session_id,
-            user_input=str(user_input)[:500],  # Limita tamanho
+            user_input=str(user_input)[:500],
             action_taken=str(action_taken)[:200],
             tools_used=tools_used or [],
             result_summary=str(result_summary)[:300],
@@ -102,8 +114,14 @@ class Telemetry:
             error=str(error)[:500] if error else None,
             model_used=str(model_used)[:100],
             provider=str(provider)[:100],
-            tokens_used=tokens_used,
+            tokens_input=tokens_input,
+            tokens_output=tokens_output,
+            total_tokens=total_tokens,
             cost=cost,
+            shell_used=str(shell_used)[:30],
+            api_endpoint=str(api_endpoint)[:200],
+            model_selected_by_shell=str(model_selected_by_shell)[:100],
+            complexity=complexity,
         )
         
         # Escreve no arquivo — NUNCA falha
@@ -186,7 +204,13 @@ class Telemetry:
                 inp = e.get("user_input", "")[:60]
                 act = e.get("action_taken", "")[:30]
                 ok = "OK" if e.get("success", True) else "FAIL"
-                lines.append(f"  [{ts}] {ok} {act}: {inp}")
+                shell = e.get("shell_used", "")
+                tokens = e.get("total_tokens", 0)
+                cost = e.get("cost", 0)
+                detail = f"[{shell}]" if shell else ""
+                detail += f" {tokens}tok" if tokens else ""
+                detail += f" ${cost:.4f}" if cost else ""
+                lines.append(f"  [{ts}] {ok} {act}: {inp} {detail}")
         
         return "\n".join(lines)
 
