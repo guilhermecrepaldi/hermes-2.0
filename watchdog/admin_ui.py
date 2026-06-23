@@ -188,4 +188,29 @@ def create_app():
             for name, p in CATALOG.items() if p.enabled
         }
 
+    # Model catalog endpoint (like /v1/models)
+    @app.get("/v1/models")
+    async def v1_models():
+        """Endpoint compatible with OpenAI /v1/models format.
+        Enables native model picker in Claude Code and Codex."""
+        try:
+            from model_catalog import get_models_json
+            models = get_models_json()
+            return {
+                "object": "list",
+                "data": models,
+            }
+        except ImportError as e:
+            return {"object": "list", "data": [], "error": str(e)}
+
+    @app.get("/model/suggest")
+    async def model_suggest(task: str = ""):
+        """Suggest best model for a task."""
+        try:
+            from model_catalog import suggested_model
+            model = suggested_model(task)
+            return {"suggested": model, "task": task}
+        except ImportError as e:
+            return {"suggested": "", "error": str(e)}
+
     return app
