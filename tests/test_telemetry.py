@@ -135,3 +135,11 @@ def test_record_interaction():
         assert True
     except Exception as e:
         assert False, f"record_interaction falhou: {e}"
+
+
+def test_mini_report_produces_text():
+    """mini_report() deve produzir texto com headings esperados."""
+    from telemetry import telemetry
+    report = telemetry.mini_report()
+    assert "telemetria" in report
+    assert "Tokens" in report or "Custo" in report

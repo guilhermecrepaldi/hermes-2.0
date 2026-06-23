@@ -184,6 +184,42 @@ class Telemetry:
             pass
         return entries
     
+    def mini_report(self) -> str:
+        """Mini-telemetria para exibir ao final de cada resposta.
+        Mostra: cloud vs local tokens, custo, shell.
+        Formato: uma linha compacta.
+        """
+        entries = self.get_all_entries(limit=100)
+        
+        total_tokens = sum(e.get("total_tokens", 0) for e in entries)
+        total_cost = sum(e.get("cost", 0) for e in entries)
+        
+        # Separa cloud vs local
+        cloud_shells = {"S2_cheap", "S3_premium", "S1_nuvem"}
+        cloud_tokens = sum(e.get("total_tokens", 0) for e in entries 
+                          if e.get("shell_used", "") in cloud_shells)
+        local_tokens = sum(e.get("total_tokens", 0) for e in entries 
+                          if e.get("shell_used", "") in {"S1_local"})
+        
+        cloud_cost = sum(e.get("cost", 0) for e in entries 
+                        if e.get("shell_used", "") in cloud_shells)
+        
+        lines = [
+            "── telemetria ─────────────────────",
+        ]
+        
+        if total_tokens:
+            lines.append(f"  Tokens: {total_tokens} total")
+            if cloud_tokens:
+                lines.append(f"  Cloud:  {cloud_tokens} tok ${cloud_cost:.4f}")
+            if local_tokens:
+                lines.append(f"  Local:  {local_tokens} tok $0.0000")
+        
+        lines.append(f"  Custo:  ${total_cost:.4f}")
+        lines.append("────────────────────────────────────")
+        
+        return "\\n".join(lines)
+
     def summary(self) -> str:
         """Resumo legivel da telemetria."""
         stats = self.get_stats()
