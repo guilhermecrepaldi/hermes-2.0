@@ -3,8 +3,9 @@
 Start: python server.py
 Access: http://localhost:8082/admin
 """
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "watchdog"))
 
 from admin_ui import create_app

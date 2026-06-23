@@ -1,11 +1,12 @@
 """Hermes Proactive Analyzer — Suggests improvements without being asked."""
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
+
+import os
+import re
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-import re
-import os
+from typing import List, Optional
 
 try:
     from logger import get_logger

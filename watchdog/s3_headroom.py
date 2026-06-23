@@ -10,14 +10,13 @@ Funcionalidades:
 3. solution_search()   → Busca soluções no projeto + web
 4. project_map()       → Mapa estrutural do projeto para decisões do S3
 """
+import json
 import os
 import re
-import json
-import subprocess
 import shutil
-from pathlib import Path
-from datetime import datetime
+import subprocess
 from collections import Counter
+from pathlib import Path
 
 # ══════════════════════════════════════════════════════════════
 # 1. PROJECT LOAD — Importa qualquer projeto git
@@ -27,11 +26,11 @@ def project_load(path_or_url: str, target_dir: str = None) -> dict:
     """
     Importa um projeto local ou remoto (git).
     Retorna um resumo estruturado para consumo do S3.
-    
+
     Args:
         path_or_url: Caminho local OU URL git (https://github.com/user/repo)
         target_dir: Onde clonar (se URL). Default: ~/hermes-projects/<repo-name>
-    
+
     Returns:
         Dict com: estrutura, linguagens, arquivos-chave, stats
     """
@@ -47,16 +46,16 @@ def project_load(path_or_url: str, target_dir: str = None) -> dict:
         "dependencies": [],
         "error": None,
     }
-    
+
     # Detect if URL or local path
     is_url = path_or_url.startswith(("http://", "https://", "git@"))
-    
+
     if is_url:
         # Clone remote repo
         repo_name = path_or_url.rstrip("/").split("/")[-1].replace(".git", "")
         if target_dir is None:
             target_dir = os.path.expanduser(f"~/hermes-projects/{repo_name}")
-        
+
         try:
             r = subprocess.run(
                 ["git", "clone", "--depth", "1", path_or_url, target_dir],
@@ -84,35 +83,35 @@ def project_load(path_or_url: str, target_dir: str = None) -> dict:
         result["path"] = str(p.resolve())
         result["name"] = p.name
         result["status"] = "local"
-    
+
     # Analyze project structure
     project_path = Path(result["path"])
-    
+
     # Count files and extensions
     extensions = Counter()
     total_lines = 0
     total_files = 0
     total_dirs = 0
     key_files = []
-    
+
     IGNORE_DIRS = {'.git', '__pycache__', 'node_modules', '.venv', 'venv',
                    '.tox', 'dist', 'build', '.next', '.nuxt', 'target',
                    '.idea', '.vscode', '.DS_Store', '*.pyc', '.gitkeep'}
-    
+
     for root, dirs, files in os.walk(project_path):
         # Skip ignored dirs
         dirs[:] = [d for d in dirs if d not in IGNORE_DIRS and not d.startswith('.')]
         total_dirs += 1
-        
+
         for f in files:
             if f.startswith('.') and f not in {'.env.example', '.gitignore', '.dockerignore'}:
                 continue
             total_files += 1
-            
+
             ext = Path(f).suffix.lower()
             if ext:
                 extensions[ext] += 1
-            
+
             # Count lines for text files
             fpath = Path(root) / f
             try:
@@ -125,7 +124,7 @@ def project_load(path_or_url: str, target_dir: str = None) -> dict:
                 if ext in text_exts and fpath.stat().st_size < 500000:
                     lines = len(fpath.read_text(encoding='utf-8', errors='ignore').splitlines())
                     total_lines += lines
-                    
+
                     # Identify key files
                     if f in {'README.md', 'index.md', 'setup.py', 'setup.cfg',
                              'pyproject.toml', 'package.json', 'Cargo.toml',
@@ -138,7 +137,7 @@ def project_load(path_or_url: str, target_dir: str = None) -> dict:
                             "lines": lines,
                             "type": ext,
                         })
-                    
+
                     # Collect dependencies from key config files
                     if f == 'requirements.txt':
                         result["dependencies"].append({
@@ -163,11 +162,11 @@ def project_load(path_or_url: str, target_dir: str = None) -> dict:
                             "count": deps_count,
                         })
             except: pass
-    
+
     result["files"] = total_files
     result["dirs"] = total_dirs
     result["lines"] = total_lines
-    
+
     # Detect main language
     lang_map = {
         '.py': 'Python', '.js': 'JavaScript', '.ts': 'TypeScript',
@@ -177,19 +176,19 @@ def project_load(path_or_url: str, target_dir: str = None) -> dict:
         '.kt': 'Kotlin', '.html': 'HTML', '.css': 'CSS',
         '.vue': 'Vue', '.svelte': 'Svelte',
     }
-    
+
     if extensions:
         main_ext = extensions.most_common(1)[0][0]
         result["language"] = lang_map.get(main_ext, main_ext)
-    
+
     # Top 5 extensions
     result["top_extensions"] = [
         {"ext": lang_map.get(ext, ext), "files": count}
         for ext, count in extensions.most_common(5)
     ]
-    
+
     result["key_files"] = key_files[:10]  # top 10 key files
-    
+
     return result
 
 
@@ -203,20 +202,20 @@ def context_compress(text: str, max_chars: int = 3000) -> str:
     - Remove linhas重复/redundantes
     - Mantém apenas estrutura + pontos-chave
     - Ideal para tool outputs longos
-    
+
     Args:
         text: Texto original (ex: tool output, log, arquivo)
         max_chars: Limite de compressão (default: 3000)
-    
+
     Returns:
         Texto comprimido + metadados de economia
     """
     original_chars = len(text)
-    original_lines = text.count('\n') + 1
-    
+    text.count('\n') + 1
+
     # Remove linhas em branco repetidas (mantém apenas 1)
     compressed = re.sub(r'\n{3,}', '\n\n', text)
-    
+
     # Remove linhas de debug/info repetitivas
     skip_patterns = [
         r'^\s*(DEBUG|TRACE|INFO):.*$',  # logs verbosos
@@ -230,20 +229,20 @@ def context_compress(text: str, max_chars: int = 3000) -> str:
         if any(re.match(p, line) for p in skip_patterns):
             continue
         filtered.append(line)
-    
+
     compressed = '\n'.join(filtered)
-    
+
     # If still too long, keep first N + last N chars
     if len(compressed) > max_chars:
         half = max_chars // 2
-        compressed = (compressed[:half] + 
+        compressed = (compressed[:half] +
                      f"\n\n[... TRUNCATED: {len(compressed) - max_chars} chars removidos ...]\n\n" +
                      compressed[-half:])
-    
+
     compressed_chars = len(compressed)
     savings = original_chars - compressed_chars
     savings_pct = round((savings / original_chars) * 100) if original_chars > 0 else 0
-    
+
     return (
         f"📦 Compressao: {original_chars} → {compressed_chars} chars "
         f"(-{savings_pct}%, economia de ~{savings_pct // 4 * 1000} tokens)\n"
@@ -260,32 +259,32 @@ def solution_search(project_path: str, query: str, max_results: int = 5) -> list
     """
     Busca soluções dentro de um projeto usando ripgrep/grep.
     Retorna trechos de código relevantes para a query.
-    
+
     Args:
         project_path: Caminho do projeto
         query: O que procurar (ex: "funcao de autenticacao", "error handling")
         max_results: Máximo de resultados
-    
+
     Returns:
         Lista de {arquivo, linha, trecho, relevancia}
     """
     results = []
-    
+
     # Try ripgrep first (faster), fallback to grep
     grep_cmd = None
     for cmd in ['rg', 'grep', 'findstr']:
         if shutil.which(cmd):
             grep_cmd = cmd
             break
-    
+
     if not grep_cmd:
         return [{"error": "Nenhuma ferramenta de busca encontrada (rg/grep/findstr)"}]
-    
+
     # Split query into keywords
     keywords = query.lower().split()
     if not keywords:
         return []
-    
+
     # Build grep pattern
     if grep_cmd == 'rg':
         pattern = '|'.join(keywords)
@@ -315,44 +314,44 @@ def solution_search(project_path: str, query: str, max_results: int = 5) -> list
     else:  # findstr (Windows)
         try:
             r = subprocess.run(
-                ['findstr', '/S', '/I', '/M', query, 
+                ['findstr', '/S', '/I', '/M', query,
                  f'{project_path}\\*.py', f'{project_path}\\*.js', f'{project_path}\\*.ts'],
                 capture_output=True, text=True, timeout=30,
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
             output = r.stdout
         except: output = ""
-    
+
     # Parse results
     for line in output.split('\n')[:max_results * 3]:
         line = line.strip()
         if not line:
             continue
-        
+
         # Format: filename:lineno:content
         if grep_cmd == 'findstr':
             parts = line.split(':', 1)
         else:
             parts = line.split(':', 2)
-        
+
         if len(parts) >= 2:
             filepath = parts[0]
             try:
                 lineno = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
             except: lineno = 0
             content = parts[-1] if len(parts) > 2 else ""
-            
+
             # Calculate relevance (keyword match count)
             content_lower = content.lower()
             relevance = sum(1 for kw in keywords if kw in content_lower)
-            
+
             results.append({
                 "file": filepath,
                 "line": lineno,
                 "snippet": content.strip()[:150],
                 "relevance": relevance,
             })
-    
+
     # Sort by relevance, deduplicate by file
     seen = set()
     unique = []
@@ -360,7 +359,7 @@ def solution_search(project_path: str, query: str, max_results: int = 5) -> list
         if r['file'] not in seen:
             seen.add(r['file'])
             unique.append(r)
-    
+
     return unique[:max_results]
 
 
@@ -372,24 +371,24 @@ def project_map(project_path: str, max_depth: int = 3) -> str:
     """
     Gera um mapa estrutural do projeto para o S3 entender rapidamente.
     Similar a 'tree' mas filtrando arquivos não relevantes.
-    
+
     Args:
         project_path: Caminho do projeto
         max_depth: Profundidade máxima da árvore
-    
+
     Returns:
         String formatada com a árvore + estatísticas
     """
     root = Path(project_path)
     if not root.exists():
         return f"Erro: {project_path} nao existe"
-    
+
     IGNORE = {'.git', '__pycache__', 'node_modules', '.venv', 'venv',
               '.tox', 'dist', 'build', '.next', '.nuxt', 'target',
               '.idea', '.vscode', '.DS_Store', '*.pyc'}
-    
+
     tree_lines = []
-    
+
     def _walk(path: Path, prefix: str = "", depth: int = 0):
         if depth > max_depth:
             return
@@ -397,11 +396,11 @@ def project_map(project_path: str, max_depth: int = 3) -> str:
             entries = sorted([e for e in path.iterdir() if e.name not in IGNORE and not e.name.startswith('.')],
                             key=lambda x: (not x.is_dir(), x.name.lower()))
         except: return
-        
+
         for i, entry in enumerate(entries):
             is_last = i == len(entries) - 1
             connector = "└── " if is_last else "├── "
-            
+
             if entry.is_dir():
                 tree_lines.append(f"{prefix}{connector}{entry.name}/")
                 extension = "    " if is_last else "│   "
@@ -410,12 +409,12 @@ def project_map(project_path: str, max_depth: int = 3) -> str:
                 size = entry.stat().st_size
                 size_str = f"({size:,} bytes)" if size < 1024 else f"({size//1024} KB)" if size < 1024*1024 else f"({size//1024//1024} MB)"
                 tree_lines.append(f"{prefix}{connector}{entry.name} {size_str}")
-    
+
     tree_lines.append(f"{root.name}/")
     _walk(root)
-    
+
     stats = project_load(project_path)
-    
+
     return (
         f"📂 PROJETO: {root.name}\n"
         f"{'='*50}\n"
@@ -434,7 +433,7 @@ def project_map(project_path: str, max_depth: int = 3) -> str:
 
 def main():
     import sys
-    
+
     if len(sys.argv) < 2:
         print("Uso: python s3_headroom.py <comando> [args]")
         print("")
@@ -451,23 +450,23 @@ def main():
         print('  python s3_headroom.py search D:\\projeto "auth login"')
         print("  python s3_headroom.py map D:\\projeto")
         return
-    
+
     cmd = sys.argv[1]
-    
+
     if cmd == "load" and len(sys.argv) >= 3:
         result = project_load(sys.argv[2])
         print(json.dumps(result, indent=2, ensure_ascii=False))
-    
+
     elif cmd == "compress" and len(sys.argv) >= 3:
         print(context_compress(sys.argv[2]))
-    
+
     elif cmd == "search" and len(sys.argv) >= 4:
         results = solution_search(sys.argv[2], sys.argv[3])
         print(json.dumps(results, indent=2, ensure_ascii=False))
-    
+
     elif cmd == "map" and len(sys.argv) >= 3:
         print(project_map(sys.argv[2]))
-    
+
     else:
         print(f"Comando desconhecido: {cmd}")
 

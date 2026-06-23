@@ -2,11 +2,10 @@
 Inspired by Claude Code's CLAUDE_CODE_AUTO_COMPACT_WINDOW=190000.
 """
 from __future__ import annotations
-import re
-import os
-from pathlib import Path
-from typing import Optional, Dict, Any, List
+
 from datetime import datetime
+from pathlib import Path
+from typing import Dict, List
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -32,27 +31,27 @@ def should_compact(text: str) -> bool:
 
 def compact_conversation(messages: List[Dict]) -> List[Dict]:
     """Compact conversation intelligently.
-    
+
     1. Summarize older tool outputs
     2. Collapse repeated patterns
     3. Keep user intent and final decisions
     """
     global _compact_count, _last_compact
-    
+
     if not messages or len(messages) < 4:
         return messages
-    
+
     _compact_count += 1
     _last_compact = datetime.now().isoformat()
-    
+
     compacted = []
     tool_output_accumulator = []
     assistant_count = 0
-    
+
     for msg in messages:
         role = msg.get("role", "")
         content = msg.get("content", "")
-        
+
         if role == "tool":
             # Accumulate tool outputs and summarize when many
             tool_output_accumulator.append(content[:200])
@@ -64,7 +63,7 @@ def compact_conversation(messages: List[Dict]) -> List[Dict]:
                 })
                 tool_output_accumulator = []
             continue
-        
+
         if tool_output_accumulator:
             summary = _summarize_tool_outputs(tool_output_accumulator)
             compacted.append({
@@ -72,15 +71,15 @@ def compact_conversation(messages: List[Dict]) -> List[Dict]:
                 "content": f"[Compacted {len(tool_output_accumulator)} tool outputs]\n{summary}"
             })
             tool_output_accumulator = []
-        
+
         if role == "assistant":
             assistant_count += 1
             # Keep first 3 assistant messages fully, compact the rest
             if assistant_count > 3:
                 content = _compact_assistant_message(content)
-        
+
         compacted.append(msg)
-    
+
     # Clean up remaining tool outputs
     if tool_output_accumulator:
         summary = _summarize_tool_outputs(tool_output_accumulator)
@@ -88,13 +87,13 @@ def compact_conversation(messages: List[Dict]) -> List[Dict]:
             "role": "tool",
             "content": f"[Compacted {len(tool_output_accumulator)} tool outputs]\n{summary}"
         })
-    
+
     # If still too large, more aggressive compaction
     text = " ".join(m.get("content", "") for m in compacted)
     ratio = estimate_tokens(text) / MAX_CONTEXT_TOKENS
     if ratio > TARGET_RATIO:
         compacted = _aggressive_compact(compacted)
-    
+
     return compacted
 
 
@@ -113,10 +112,10 @@ def _summarize_tool_outputs(outputs: List[str]) -> str:
                 summaries.append(f"{first} ... {last}")
             else:
                 summaries.append(first)
-    
+
     if not summaries:
         return "[Tool outputs summarized]"
-    
+
     return "\n".join(summaries[:5])
 
 
@@ -131,16 +130,16 @@ def _aggressive_compact(messages: List[Dict]) -> List[Dict]:
     """More aggressive compaction when still over limit."""
     compacted = []
     keep_roles = {"user", "system"}
-    
+
     for i, msg in enumerate(messages):
         role = msg.get("role", "")
         content = msg.get("content", "")
-        
+
         # Always keep system and user messages
         if role in keep_roles:
             compacted.append(msg)
             continue
-        
+
         # Keep last 3 assistant and tool messages
         remaining = len(messages) - i
         is_last = remaining <= 3
@@ -150,7 +149,7 @@ def _aggressive_compact(messages: List[Dict]) -> List[Dict]:
             compacted.append({"role": "assistant", "content": content[:200]})
         elif role == "tool":
             compacted.append({"role": "tool", "content": content[:100]})
-    
+
     return compacted
 
 

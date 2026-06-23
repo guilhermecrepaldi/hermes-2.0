@@ -1,12 +1,11 @@
 """Hermes 2.0 — Dataclasses, tipos compartilhados, harness e roteamento economico."""
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
-import os
+
 import json
-import subprocess
 import urllib.request
+from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 
 def _get_logger():
@@ -54,7 +53,7 @@ def ollama_generate(prompt: str, model: str = LOCAL_MODEL,
         resp = urllib.request.urlopen(req, timeout=60)
         result = json.loads(resp.read())
         return result.get("response", "").strip()
-    except Exception as e:
+    except Exception:
         return None
 
 

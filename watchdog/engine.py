@@ -4,13 +4,13 @@
 Motor de servicos do Hermes 2.0: tudo que nao e loop puro nem harness.
 """
 from __future__ import annotations
+
 import json
 import os
-import re
 import subprocess
-from pathlib import Path
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from pathlib import Path
+from typing import Any, Dict
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -141,7 +141,7 @@ class CodingAgent:
     @staticmethod
     def plan_and_execute(setup: dict) -> list:
         logger.info("CodingAgent: plan_and_execute")
-        progresso = carregar_progresso()
+        carregar_progresso()
         plan = [
             f"1. {setup['context']['descricao'][:50]}",
             "2. Implementar com type hints",

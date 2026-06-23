@@ -2,8 +2,9 @@
 /v1/models endpoint support with native model picker integration.
 """
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
+
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
 try:
     from providers import CATALOG
@@ -33,7 +34,7 @@ def build_catalog() -> Dict[str, ModelInfo]:
     catalog = {}
     if not PROVIDERS_AVAILABLE:
         return catalog
-    
+
     for provider_name, provider in CATALOG.items():
         if not provider.enabled:
             continue
@@ -87,19 +88,19 @@ def suggested_model(task: str = "") -> str:
     catalog = build_catalog()
     if not catalog:
         return ""
-    
+
     task_lower = task.lower()
-    
+
     if any(w in task_lower for w in ["code", "debug", "python", "js", "function"]):
         for mid, m in catalog.items():
             if "qwen2.5-coder" in mid and m.is_local:
                 return mid
-    
+
     if any(w in task_lower for w in ["image", "screenshot", "vision", "photo"]):
         for mid, m in catalog.items():
             if m.supports_vision and not m.is_local:
                 return mid
-    
+
     for mid, m in catalog.items():
         if m.is_local:
             return mid

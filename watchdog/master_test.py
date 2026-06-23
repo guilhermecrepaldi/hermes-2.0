@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Hermes 3.0 — Master Test (Python puro, zero dependencias de shell)"""
-import subprocess, sys, os, json
+import os
+import subprocess
+import sys
 
 WD = os.path.dirname(os.path.abspath(__file__))
 PY = sys.executable
@@ -122,7 +124,7 @@ test("Skill benchmark", os.path.exists(os.path.join(skill_base, "dogfood", "work
 
 # ═══ RESULTADO ═══
 print(f"\n{'='*60}")
-print(f"📊 MASTER TEST — RESULTADO FINAL")
+print("📊 MASTER TEST — RESULTADO FINAL")
 print(f"{'='*60}")
 print(f"\n  Total: {TOTAL}  |  ✅ PASS: {PASS}  |  ❌ FAIL: {FAIL}")
 print()
@@ -138,9 +140,9 @@ else:
     print(f"  ⚠️  {FAIL} falhas precisam ser corrigidas")
 
 print(f"{'='*60}")
-print(f"\nDominios testados:")
-print(f"  CLI Basico: 3/3  | Router: 2/2  | Explain: 2/2  | DevToys: 6/6")
-print(f"  Research: 2/2  | Convert: 1/1  | Memory: 3/3  | Docs: 1/1")
-print(f"  Batch: 1/1  | Templates: 6/6  | JTree/Panorama/Compress: 3/3")
-print(f"  Watchdog: 3/3  | VBS+Fallback: 2/2  | Skills: 2/2")
+print("\nDominios testados:")
+print("  CLI Basico: 3/3  | Router: 2/2  | Explain: 2/2  | DevToys: 6/6")
+print("  Research: 2/2  | Convert: 1/1  | Memory: 3/3  | Docs: 1/1")
+print("  Batch: 1/1  | Templates: 6/6  | JTree/Panorama/Compress: 3/3")
+print("  Watchdog: 3/3  | VBS+Fallback: 2/2  | Skills: 2/2")
 sys.exit(0 if FAIL == 0 else 1)

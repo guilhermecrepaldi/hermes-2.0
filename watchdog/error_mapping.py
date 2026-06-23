@@ -2,8 +2,9 @@
 Maps provider-specific errors to standardized Hermes error types.
 """
 from __future__ import annotations
-from typing import Optional, Dict, Any
-from dataclasses import dataclass, field
+
+from dataclasses import dataclass
+from typing import Dict
 
 
 @dataclass
@@ -114,12 +115,12 @@ ERROR_CATALOG: Dict[str, HermesError] = {
 
 def map_error(error: str, provider: str = "") -> HermesError:
     """Map an error string to a standardized HermesError.
-    
+
     Uses keyword matching against known error patterns.
     Falls back to 'unknown' if no pattern matches.
     """
     error_lower = error.lower()
-    
+
     # Connection errors
     if any(w in error_lower for w in ["refused", "connection refused", "econnrefused"]):
         return _copy("connection_refused", provider, error)
@@ -127,7 +128,7 @@ def map_error(error: str, provider: str = "") -> HermesError:
         return _copy("timeout", provider, error)
     if any(w in error_lower for w in ["dns", "name or service not known", "resolve"]):
         return _copy("dns_failure", provider, error)
-    
+
     # Auth errors
     if any(w in error_lower for w in ["auth", "unauthorized", "401", "403", "api key"]):
         return _copy("auth_failed", provider, error)
@@ -135,7 +136,7 @@ def map_error(error: str, provider: str = "") -> HermesError:
         return _copy("rate_limited", provider, error)
     if any(w in error_lower for w in ["quota", "exceeded", "insufficient"]):
         return _copy("quota_exceeded", provider, error)
-    
+
     # Model errors
     if any(w in error_lower for w in ["model not found", "not found", "does not exist"]):
         return _copy("model_not_found", provider, error)
@@ -143,13 +144,13 @@ def map_error(error: str, provider: str = "") -> HermesError:
         return _copy("model_overloaded", provider, error)
     if any(w in error_lower for w in ["context", "token limit", "too long", "max tokens"]):
         return _copy("context_too_long", provider, error)
-    
+
     # Local errors
     if any(w in error_lower for w in ["ollama", "connect"]):
         return _copy("ollama_not_running", provider, error)
     if any(w in error_lower for w in ["pull", "download", "not found"]):
         return _copy("model_not_pulled", provider, error)
-    
+
     return _copy("unknown", provider, error)
 
 

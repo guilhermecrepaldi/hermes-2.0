@@ -11,10 +11,10 @@ Uso:
 import json
 import re
 import time
-import urllib.request
 import urllib.parse
+import urllib.request
+from dataclasses import asdict, dataclass, field
 from html.parser import HTMLParser
-from dataclasses import dataclass, field, asdict
 from typing import Optional
 
 # ══════════════════════════════════════════════════════════════
@@ -47,7 +47,7 @@ class GrepResponse:
 
 class GrepHTMLParser(HTMLParser):
     """Parse grep.app search results from HTML."""
-    
+
     def __init__(self):
         super().__init__()
         self.results = []
@@ -62,11 +62,11 @@ class GrepHTMLParser(HTMLParser):
         self._capture_text = False
         self._text_buffer = ""
         self._line_num = 0
-        
+
     def handle_starttag(self, tag, attrs):
         attrs_dict = dict(attrs)
         self._tag_stack.append(tag)
-        
+
         # Detect result rows - each result has a link to repo
         if tag == 'a' and 'href' in attrs_dict:
             href = attrs_dict['href']
@@ -78,7 +78,7 @@ class GrepHTMLParser(HTMLParser):
                         self._current['repo_url'] = f"https://github.com{href}"
                         self._current['repo'] = '/'.join(parts[1:3])
                         self._in_repo = True
-        
+
         # Check for result containers (table rows with code)
         if 'class' in attrs_dict:
             cls = attrs_dict['class']
@@ -88,7 +88,7 @@ class GrepHTMLParser(HTMLParser):
             elif 'code' in cls:
                 self._in_snippet = True
                 self._text_buffer = ""
-    
+
     def handle_endtag(self, tag):
         if tag == 'a' and self._in_repo:
             self._in_repo = False
@@ -98,7 +98,7 @@ class GrepHTMLParser(HTMLParser):
             self._in_line = False
         if self._tag_stack:
             self._tag_stack.pop()
-    
+
     def handle_data(self, data):
         if self._in_repo and data.strip():
             self._current['repo'] = data.strip()
@@ -106,40 +106,40 @@ class GrepHTMLParser(HTMLParser):
             self._text_buffer += data
 
 
-def search_grep(query: str, lang: str = None, repo: str = None, 
+def search_grep(query: str, lang: str = None, repo: str = None,
                 max_results: int = 10, timeout: int = 30) -> GrepResponse:
     """
     Search grep.app for code snippets.
-    
+
     Args:
         query: Text to search for (e.g., "api key authentication")
         lang: Filter by language (python, go, rust, typescript, etc.)
         repo: Filter by repository (e.g., "fastapi/fastapi")
         max_results: Max results to return (default: 10)
         timeout: Request timeout in seconds
-    
+
     Returns:
         GrepResponse with results
     """
     start_time = time.time()
     t0 = start_time
-    
+
     # Build URL
     params = {'q': query}
     if lang:
         params['lang'] = lang
     if repo:
         params['repo'] = repo
-    
+
     url = f"https://grep.app/search?{urllib.parse.urlencode(params)}"
-    
+
     # Try JSON API first (grep.app may have an undocumented API)
     json_url = f"https://grep.app/search?q={urllib.parse.quote(query)}&json=1"
     if lang:
         json_url += f"&lang={lang}"
     if repo:
         json_url += f"&repo={repo}"
-    
+
     req = urllib.request.Request(
         json_url,
         headers={
@@ -147,12 +147,12 @@ def search_grep(query: str, lang: str = None, repo: str = None,
             "Accept": "application/json, text/html",
         }
     )
-    
+
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = resp.read().decode('utf-8')
             resp_time = int((time.time() - t0) * 1000)
-            
+
             # Try JSON parse
             try:
                 json_data = json.loads(data)
@@ -169,7 +169,7 @@ def search_grep(query: str, lang: str = None, repo: str = None,
                     ))
                     if len(results) >= max_results:
                         break
-                
+
                 return GrepResponse(
                     query=query,
                     total_results=json_data.get('total', len(results)),
@@ -186,7 +186,7 @@ def search_grep(query: str, lang: str = None, repo: str = None,
             time.sleep(5)
         elif e.code != 200:
             pass
-    
+
     # Fallback: search via normal HTML URL
     req2 = urllib.request.Request(
         url,
@@ -195,43 +195,41 @@ def search_grep(query: str, lang: str = None, repo: str = None,
             "Accept": "text/html",
         }
     )
-    
+
     try:
         time.sleep(1)  # Rate limit respect
         with urllib.request.urlopen(req2, timeout=timeout) as resp:
             html = resp.read().decode('utf-8')
             resp_time = int((time.time() - t0) * 1000)
-            
+
             # Extract total count from HTML
             total_match = re.search(r'([\d,]+)\s*results?\s*found', html)
             total = int(total_match.group(1).replace(',', '')) if total_match else 0
-            
+
             # Extract results using regex patterns
             results = []
-            
+
             # Pattern: repo links and their code snippets
             # grep.app renders results in a structured format
-            repo_pattern = r'<a[^>]*href="/([^/"]+)/([^/"]+)"[^>]*>'
-            snippet_pattern = r'<tr[^>]*>.*?<td[^>]*>(\d+)</td>.*?<td[^>]*>(.*?)</td>.*?</tr>'
-            
-            repos = re.findall(r'<a[^>]*href="/([^/"]+)/([^/"]+)"[^>]*>([^<]+)</a>', html)
-            snippets = re.findall(r'<div[^>]*class="[^"]*code[^"]*"[^>]*>(.*?)</div>', html, re.DOTALL)
-            lines = re.findall(r'<td[^>]*class="[^"]*line[^"]*"[^>]*>(\d+)</td>', html)
-            paths = re.findall(r'<a[^>]*class="[^"]*path[^"]*"[^>]*>([^<]+)</a>', html)
-            
+
+            re.findall(r'<a[^>]*href="/([^/"]+)/([^/"]+)"[^>]*>([^<]+)</a>', html)
+            re.findall(r'<div[^>]*class="[^"]*code[^"]*"[^>]*>(.*?)</div>', html, re.DOTALL)
+            re.findall(r'<td[^>]*class="[^"]*line[^"]*"[^>]*>(\d+)</td>', html)
+            re.findall(r'<a[^>]*class="[^"]*path[^"]*"[^>]*>([^<]+)</a>', html)
+
             # Fallback: simpler extraction
             # Look for result blocks: repo name + file path + code snippet
             blocks = re.split(r'<div[^>]*class="[^"]*result[^"]*"', html)
-            
+
             for i, block in enumerate(blocks[1:max_results+1], 1):
                 repo_match = re.search(r'/([^/"]+)/([^/"]+)"', block)
                 file_match = re.search(r'/(blob/[^"]+)', block)
                 code_blocks = re.findall(r'<mark[^>]*>(.*?)</mark>', block, re.DOTALL)
-                
+
                 repo_name = repo_match.group(1) + '/' + repo_match.group(2) if repo_match else '?'
                 file_path = urllib.parse.unquote(file_match.group(1)) if file_match else '?'
                 snippet = ' '.join(re.sub(r'<[^>]+>', '', c).strip() for c in code_blocks[:3])
-                
+
                 if repo_name != '?':
                     results.append(GrepResult(
                         repo=repo_name,
@@ -242,7 +240,7 @@ def search_grep(query: str, lang: str = None, repo: str = None,
                         snippet=snippet[:200],
                         matches=len(code_blocks),
                     ))
-            
+
             return GrepResponse(
                 query=query,
                 total_results=total or len(results),
@@ -250,7 +248,7 @@ def search_grep(query: str, lang: str = None, repo: str = None,
                 filters={'lang': lang, 'repo': repo},
                 time_ms=resp_time,
             )
-            
+
     except urllib.error.HTTPError as e:
         return GrepResponse(
             query=query,
@@ -280,20 +278,20 @@ def s3_solution_search(problem: str, context: str = None) -> dict:
     1. Busca no grep.app por implementacoes de referencia
     2. Escaneia projetos locais com s3_headroom.solution_search()
     3. Compila resultado estruturado para decisao do S3
-    
+
     Args:
         problem: Descricao do problema (ex: "fastapi JWT authentication middleware")
         context: Contexto adicional (opcional)
-    
+
     Returns:
         Dict com solucoes encontradas, repos, trechos
     """
     from datetime import datetime
-    
+
     # Extract keywords from problem
     keywords = re.findall(r'\w+', problem.lower())
     search_query = ' '.join(keywords[:8])  # Use first 8 keywords
-    
+
     result = {
         "timestamp": datetime.now().isoformat(),
         "problem": problem,
@@ -302,10 +300,10 @@ def s3_solution_search(problem: str, context: str = None) -> dict:
         "snippets": [],
         "notes": [],
     }
-    
+
     # Search grep.app for solutions
     grepped = search_grep(search_query, max_results=5)
-    
+
     if grepped.error:
         result["notes"].append(f"grep.app: {grepped.error}")
     else:
@@ -323,7 +321,7 @@ def s3_solution_search(problem: str, context: str = None) -> dict:
                 "snippet": r.snippet[:150],
             })
         result["solutions_found"] = len(grepped.results)
-    
+
     return result
 
 
@@ -333,7 +331,7 @@ def s3_solution_search(problem: str, context: str = None) -> dict:
 
 def main():
     import sys
-    
+
     if len(sys.argv) < 2:
         print("S3 Grep — Busca de codigo em 1M+ repositorios GitHub")
         print("")
@@ -345,19 +343,19 @@ def main():
         print('  python s3_grep.py search "api key authentication" --lang python --max 3')
         print('  python s3_grep.py solve "fastapi JWT middleware"')
         return
-    
+
     cmd = sys.argv[1]
-    
+
     if cmd == "search":
         if len(sys.argv) < 3:
             print("Erro: forneca a query de busca")
             return
-        
+
         query = sys.argv[2]
         lang = None
         repo = None
         max_results = 10
-        
+
         args = sys.argv[3:]
         for i, a in enumerate(args):
             if a == '--lang' and i + 1 < len(args):
@@ -366,9 +364,9 @@ def main():
                 repo = args[i + 1]
             elif a == '--max' and i + 1 < len(args):
                 max_results = int(args[i + 1])
-        
+
         resp = search_grep(query, lang=lang, repo=repo, max_results=max_results)
-        
+
         print(json.dumps(asdict(resp) if hasattr(resp, '__dataclass_fields__') else {
             "query": resp.query,
             "total_results": resp.total_results,
@@ -376,7 +374,7 @@ def main():
             "error": resp.error,
             "time_ms": resp.time_ms,
         }, indent=2, ensure_ascii=False))
-    
+
     elif cmd == "solve":
         if len(sys.argv) < 3:
             print("Erro: forneca o problema")

@@ -38,26 +38,26 @@ for i in range(len(eds)):
     for j in range(i+1, len(eds)):
         ed1, ed2 = eds[i], eds[j]
         cards1, cards2 = by_ed[ed1], by_ed[ed2]
-        
+
         for idx1, c1 in enumerate(cards1):
             t1 = re.sub(r'[^a-z0-9\s]', '', c1['title'].lower()).strip()[:60]
             if len(t1) < 10:
                 continue
-                
+
             for idx2, c2 in enumerate(cards2):
                 t2 = re.sub(r'[^a-z0-9\s]', '', c2['title'].lower()).strip()[:60]
                 if len(t2) < 10:
                     continue
-                
+
                 # Check title similarity
                 ratio = SequenceMatcher(None, t1, t2).ratio()
-                
+
                 # Also check detail content if titles are short/similar
                 if ratio > 0.40:
                     d1 = re.sub(r'[^a-z0-9\s]', '', c1['detail'][:150].lower())
                     d2 = re.sub(r'[^a-z0-9\s]', '', c2['detail'][:150].lower())
                     detail_ratio = SequenceMatcher(None, d1, d2).ratio() if len(d1) > 20 and len(d2) > 20 else 0
-                    
+
                     if ratio > 0.55 or detail_ratio > 0.50 or (ratio > 0.40 and detail_ratio > 0.40):
                         dup_total += 1
                         # Mark the OLDER edition's card for removal

@@ -5,12 +5,11 @@ Roda a cada ~2 min e fecha o que estiver pendente.
 Chame apos qualquer task: python watchdog/finalizer.py
 """
 from __future__ import annotations
-import sys
-import os
-import subprocess
+
 import json
+import subprocess
+import sys
 from pathlib import Path
-from datetime import datetime
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent

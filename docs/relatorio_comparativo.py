@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Gera relatorio comparativo Hermes Original vs Hermes 3.0 Workbench"""
-import subprocess, os, json, sys, time
+import os
+import subprocess
+import sys
 
 WD = r"D:\projetos\hermes-watchdog"
 PY = sys.executable
@@ -65,8 +67,8 @@ for root, _, files in os.walk(skill_base):
         if f == 'SKILL.md':
             skill_lines += count_lines(os.path.join(root, f))
 
-print(f"\n  Skills criadas: workbench-mode, workbench-benchmark, innovation-scanner +")
-print(f"  Skills instaladas (automaticas + hub): ~80 skills")
+print("\n  Skills criadas: workbench-mode, workbench-benchmark, innovation-scanner +")
+print("  Skills instaladas (automaticas + hub): ~80 skills")
 print(f"\n  {'TOTAL':<28} {total_lines:>7} {total_bytes:>9,}  Linhas de codigo + skills")
 
 # ─── 2. COMPARATIVO DE CAPACIDADES ───
@@ -188,9 +190,9 @@ for cap, data in capabilities.items():
     print(f"    Resultado: ✅ {data['status']}")
 
 # ─── 3. ECONOMIA ───
-print(f"\n\n💰 3. ECONOMIA ESTIMADA")
+print("\n\n💰 3. ECONOMIA ESTIMADA")
 print("-" * 70)
-print(f"""
+print("""
   Cenario: Sessao tipica de 30 tool calls
 
                   ORIGINAL (100% cloud)     HERMES 3.0 (S1 local)
@@ -202,7 +204,7 @@ print(f"""
   Total               ~$6.25/sessao            ~$3.70/sessao
                   ─────────────────────     ─────────────────────
   Economia                                        ~$2.55 (41%)
-                           
+
   Projetando para 20 sessoes/dia:
   Original:  ~$125/dia  |  Hermes 3.0:  ~$74/dia  |  Economia: ~$51/dia
   Mensal:    ~$3.750    |  Mensal:      ~$2.220   |  Economia: ~$1.530/mes
@@ -210,9 +212,9 @@ print(f"""
 """)
 
 # ─── 4. EFICIENCIA OPERACIONAL ───
-print(f"\n⏱️  4. EFICIENCIA OPERACIONAL")
+print("\n⏱️  4. EFICIENCIA OPERACIONAL")
 print("-" * 70)
-print(f"""
+print("""
   Tarefa                    Original         Hermes 3.0        Ganho
   ─────────────────────     ──────────       ────────────      ──────────
   Pesquisar tecnologia      5-10min          30s (research)    10-20x mais rapido
@@ -228,12 +230,12 @@ print(f"""
 """)
 
 # ─── 5. COMITS ───
-print(f"\n📜 5. HISTORICO DE COMMITS (hermes-2.0)")
+print("\n📜 5. HISTORICO DE COMMITS (hermes-2.0)")
 print("-" * 70)
 r = subprocess.run(["git", "log", "--oneline", "--all"],
                    capture_output=True, text=True, timeout=10, cwd=r"D:\projetos\hermes-2.0")
 commits = [l for l in r.stdout.split('\n') if l.strip()]
-our_commits = [l for l in commits if any(kw in l for kw in 
+our_commits = [l for l in commits if any(kw in l for kw in
     ['feat:', 'fix:', 'build:', 'docs:', 'backup:', 'v2:', 'v3:', 'otimizacoes:'])]
 
 print(f"  Total de commits: {len(commits)}")
@@ -244,19 +246,19 @@ for c in commits[:5]:
 print(f"    ... (+{len(commits)-5} commits)")
 
 # ─── 6. LINHA DO TEMPO ───
-print(f"\n📅 6. LINHA DO TEMPO — CONSTRUCAO")
+print("\n📅 6. LINHA DO TEMPO — CONSTRUCAO")
 print("-" * 70)
-print(f"""
+print("""
   Semana 1 (Jun 10-11): Fundacao
     - Watchdog + Shellz + Zero janelas cmd
     - Pipeline F1-F4 + Quality Gate
-  
+
   Semana 1 (Jun 11-12): Ferramentas S3
     - S3 Headroom (project_load, compress, search, map)
     - S3 Grep (busca 1M+ repos) + S1 Router
     - ExplainShell + DevToys (15 ferramentas)
     - Pipeline OBRIGATORIO (prioridade 999)
-  
+
   Semana 1-2 (Jun 12): v3 Final
     - Research 8 fontes com resultados reais (HN+GitHub API)
     - Convert com MarkItDown (Microsoft)
@@ -270,7 +272,7 @@ print(f"""
 print(f"\n{'='*70}")
 print("🏆 RESUMO FINAL: HERMES ORIGINAL vs HERMES 3.0 WORKBENCH")
 print("=" * 70)
-print(f"""
+print("""
   METRICA                        ORIGINAL          HERMES 3.0         GANHO
   ─────────────────────────      ──────────         ────────────       ─────────
   Linhas de codigo criadas       0 (nada nosso)     ~8.500 linhas      8.500+

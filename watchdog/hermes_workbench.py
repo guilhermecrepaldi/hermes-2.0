@@ -55,18 +55,15 @@ Templates:
 Ajuda:
   help                  Mostra esta ajuda
 """
-import sys
-import os
-import json
-import hashlib
-import uuid
-import re
 import base64 as b64
-import struct
-import socket
-import subprocess
+import hashlib
+import json
+import os
 import random
-import textwrap
+import re
+import socket
+import sys
+import uuid
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -341,7 +338,6 @@ def cmd_explain(args):
         "tr:-d": "Deleta caracteres encontrados",
         "tr:-s": "Squish (comprime repeticoes)",
         "tr:-c": "Complemento (inverte conjunto)",
-        "tee:-a": "Append em vez de sobrescrever",
     }
 
     # Explain the command itself
@@ -351,7 +347,7 @@ def cmd_explain(args):
 
     # Explain each arg
     if cmd_args:
-        print(f"\n🔍 ARGUMENTOS:")
+        print("\n🔍 ARGUMENTOS:")
         i = 0
         while i < len(cmd_args):
             arg = cmd_args[i]
@@ -383,7 +379,7 @@ def cmd_explain(args):
             elif arg.startswith('-'):
                 # Unknown flag - try partial match
                 flag_base = arg.split('=')[0] if '=' in arg else arg
-                partial_matches = [k for k in FLAG_KNOWLEDGE if k.startswith(f"{command}:") and 
+                partial_matches = [k for k in FLAG_KNOWLEDGE if k.startswith(f"{command}:") and
                                   (flag_base in k or arg in k)]
                 if partial_matches:
                     best = partial_matches[0]
@@ -484,10 +480,10 @@ def _dev_jwt_decode(args):
             if pad != 4:
                 data += '=' * pad
             return b64.b64decode(data)
-        
+
         header = json.loads(b64_decode(parts[0]))
         payload = json.loads(b64_decode(parts[1]))
-        
+
         print("  📋 HEADER:")
         for k, v in header.items():
             print(f"    {k}: {v}")
@@ -593,7 +589,7 @@ def _dev_json_validate(args):
     try:
         with open(path, encoding='utf-8') as f:
             data = json.load(f)
-        print(f"  ✅ JSON VALIDO")
+        print("  ✅ JSON VALIDO")
         if isinstance(data, dict):
             print(f"     Objeto com {len(data)} chaves")
         elif isinstance(data, list):
@@ -694,7 +690,7 @@ def _dev_ip(args):
             ext_ip = urllib.request.urlopen("https://api.ipify.org", timeout=5).read().decode()
             print(f"  IP Externo: {ext_ip}")
         except:
-            print(f"  IP Externo: (nao foi possivel determinar)")
+            print("  IP Externo: (nao foi possivel determinar)")
     except Exception as e:
         print(f"  ❌ Erro: {e}")
     return 0
@@ -744,8 +740,6 @@ def _print_tree(data, indent=0, prefix="", is_last=True, max_depth=6):
         print(f"{'  ' * indent}  \033[90m... (profundidade maxima)\033[0m")
         return
 
-    connector = "└── " if is_last else "├── "
-    extender = "    " if is_last else "│   "
 
     if isinstance(data, dict):
         items = list(data.items())
@@ -887,7 +881,7 @@ def cmd_research(args):
                     print(f"    📌 {item['title'][:80]}")
                     print(f"       {item['points']} pts | {item.get('url','')[:70]}")
             else:
-                print(f"    (sem resultados)")
+                print("    (sem resultados)")
             print()
 
         elif src == 'github' or (auto_mode and src == 'github'):
@@ -899,7 +893,7 @@ def cmd_research(args):
                     print(f"    🐙 {item['full_name']}")
                     print(f"       ⭐{item['stars']} | {item['description'][:70]}")
             else:
-                print(f"    (sem resultados)")
+                print("    (sem resultados)")
             print()
 
         else:
@@ -922,18 +916,18 @@ def cmd_research(args):
     print(f"  Resultados via API: {total_items}")
 
     if results.get('hn'):
-        print(f"\n  ## Hacker News")
+        print("\n  ## Hacker News")
         for item in results['hn'][:3]:
             print(f"  - {item['title'][:80]} ({item['points']} pts)")
 
     if results.get('github'):
-        print(f"\n  ## GitHub")
+        print("\n  ## GitHub")
         for item in results['github'][:3]:
             print(f"  - {item['full_name']} ⭐{item['stars']}")
 
-    print(f"\n  ## Recomendacao S3")
-    print(f"  Para acesso completo, utilize browser_navigate para cada fonte.")
-    print(f"  O modo --auto busca automaticamente HN + GitHub via API.")
+    print("\n  ## Recomendacao S3")
+    print("  Para acesso completo, utilize browser_navigate para cada fonte.")
+    print("  O modo --auto busca automaticamente HN + GitHub via API.")
     print()
 
     return 0
@@ -941,8 +935,8 @@ def cmd_research(args):
 
 def _research_hn(topic):
     """Pesquisa Hacker News via API JSON gratuita. Retorna lista de resultados."""
-    import urllib.request
     import json as _json
+    import urllib.request
     results = []
     try:
         url = f"https://hn.algolia.com/api/v1/search?query={topic.replace(' ', '+')}&tags=story&hitsPerPage=5"
@@ -957,15 +951,15 @@ def _research_hn(topic):
                     'author': hit.get('author', ''),
                     'created': hit.get('created_at', ''),
                 })
-    except Exception as e:
+    except Exception:
         pass
     return results
 
 
 def _research_github(topic):
     """Pesquisa GitHub via API REST. Retorna lista de resultados."""
-    import urllib.request
     import json as _json
+    import urllib.request
     results = []
     try:
         url = f"https://api.github.com/search/repositories?q={topic.replace(' ', '+')}&sort=stars&order=desc&per_page=5"
@@ -983,7 +977,7 @@ def _research_github(topic):
                     'url': r['html_url'],
                     'language': r.get('language', ''),
                 })
-    except Exception as e:
+    except Exception:
         pass
     return results
 
@@ -1059,7 +1053,7 @@ def cmd_convert(args):
             with open(path) as f:
                 data = json.load(f)
             print(f"# {filename}\n")
-            print(f"```json")
+            print("```json")
             print(json.dumps(data, indent=2, ensure_ascii=False)[:5000])
             print("```")
 
@@ -1097,7 +1091,7 @@ def cmd_convert(args):
                 with open(path, encoding='utf-8') as f:
                     data = yaml.safe_load(f)
                 print(f"# {filename}\n")
-                print(f"```yaml")
+                print("```yaml")
                 import yaml as _yaml
                 print(_yaml.dump(data, default_flow_style=False)[:5000])
                 print("```")
@@ -1138,11 +1132,11 @@ def cmd_browse(args):
     print("=" * 60)
     print(f"\nURL: {url}")
     print(f"Instrucao: use browser_navigate('{url}') no Hermes")
-    print(f"\nFluxo S3:")
+    print("\nFluxo S3:")
     print(f"  1. browser_navigate('{url}')")
-    print(f"  2. browser_snapshot()  — extrai conteudo")
-    print(f"  3. s3_headroom.compress() — comprime para tokens")
-    print(f"  4. Inclui no DECISION_PACKAGE")
+    print("  2. browser_snapshot()  — extrai conteudo")
+    print("  3. s3_headroom.compress() — comprime para tokens")
+    print("  4. Inclui no DECISION_PACKAGE")
 
     # Try to extract using curl for simple pages
     import urllib.request
@@ -1161,13 +1155,13 @@ def cmd_browse(args):
 
             from s3_headroom import context_compress
             compressed = context_compress(content[:10000])
-            print(f"\n📦 Compressao:")
+            print("\n📦 Compressao:")
             for line in compressed.split('\n')[:3]:
                 print(f"   {line}")
 
     except Exception as e:
         print(f"\n  ⚠️  Nao foi possivel extrair: {str(e)[:60]}")
-        print(f"  Use o browser_tool do Hermes para acessar.")
+        print("  Use o browser_tool do Hermes para acessar.")
 
     return 0
 
@@ -1218,22 +1212,22 @@ def cmd_batch(args):
         print(f"  |  VARIACAO {i} de {n}")
         print(f"  |  Shell: {routing['shell']} - {routing['model']}")
         print(f"  |  Abordagem: {approach}")
-        print(f"  |")
+        print("  |")
         print(f"  |  S1 executa com abordagem {i}")
-        print(f"  |  S3 revisa (Quality Gate)")
+        print("  |  S3 revisa (Quality Gate)")
         print(f"  +-{sep}-+")
         print()
 
-    print(f"\nFluxo completo:")
+    print("\nFluxo completo:")
     print(f"  1. S1 gera {n} implementacoes diferentes")
-    print(f"  2. S3 revisa cada uma (Quality Gate)")
-    print(f"  3. S3 escolhe a MELHOR baseado em:")
-    print(f"     - Qualidade do codigo")
-    print(f"     - Cobertura de requisitos")
-    print(f"     - Performance")
-    print(f"     - Manutenibilidade")
+    print("  2. S3 revisa cada uma (Quality Gate)")
+    print("  3. S3 escolhe a MELHOR baseado em:")
+    print("     - Qualidade do codigo")
+    print("     - Cobertura de requisitos")
+    print("     - Performance")
+    print("     - Manutenibilidade")
     print(f"  4. Descarta as {n-1} restantes")
-    print(f"  5. Commit da vencedora")
+    print("  5. Commit da vencedora")
     print(f"\n💰 Economia estimada vs fazer 1 tentativa: ~{n}x mais chances de acerto")
 
     return 0
@@ -1482,7 +1476,7 @@ if uploaded is not None:
     df = pd.read_csv(uploaded)
     st.subheader("Data Preview")
     st.dataframe(df.head(100))
-    
+
     cols = df.select_dtypes(include="number").columns.tolist()
     if len(cols) >= 2:
         st.subheader("Chart")
@@ -1490,7 +1484,7 @@ if uploaded is not None:
         y = st.selectbox("Y axis", cols, index=min(1, len(cols)-1))
         fig = px.scatter(df, x=x, y=y)
         st.plotly_chart(fig, use_container_width=True)
-    
+
     st.subheader("Statistics")
     st.dataframe(df.describe())
 else:
@@ -1727,7 +1721,7 @@ def cmd_template(args):
         print(f"  {'-'*20} {'-'*40}")
         for name, tmpl in TEMPLATES.items():
             print(f"  {name:<20} {tmpl['desc']}")
-        print(f"\nUse: hermes-workbench template <nome> [diretorio]")
+        print("\nUse: hermes-workbench template <nome> [diretorio]")
         return 0
 
     name = args[0]
@@ -1739,7 +1733,6 @@ def cmd_template(args):
     tmpl = TEMPLATES[name]
     out_dir = args[1] if len(args) > 1 else os.path.join(os.getcwd(), name)
 
-    import shutil as _shutil
     if os.path.exists(out_dir):
         print(f"  ❌ Diretorio ja existe: {out_dir}")
         return 1
@@ -1762,32 +1755,32 @@ def cmd_template(args):
         print(f"  ✅ {filepath}")
 
     print(f"\n✅ Projeto '{project_name}' criado em {out_dir}")
-    print(f"\\nProximos passos:")
+    print("\\nProximos passos:")
     if name == 'fastapi-crud':
         print(f"  cd {out_dir}")
-        print(f"  pip install -r requirements.txt")
-        print(f"  python main.py")
+        print("  pip install -r requirements.txt")
+        print("  python main.py")
     elif name == 'cli-python':
         print(f"  cd {out_dir}")
-        print(f"  pip install -e .")
+        print("  pip install -e .")
         print(f"  {project_name} hello Mundo")
     elif name == 'react-vite':
         print(f"  cd {out_dir}")
-        print(f"  npm install")
-        print(f"  npm run dev")
+        print("  npm install")
+        print("  npm run dev")
     elif name == 'streamlit-dashboard':
         print(f"  cd {out_dir}")
-        print(f"  pip install -r requirements.txt")
-        print(f"  streamlit run app.py")
+        print("  pip install -r requirements.txt")
+        print("  streamlit run app.py")
     elif name == 'fastapi-full':
         print(f"  cd {out_dir}")
-        print(f"  pip install -r requirements.txt")
-        print(f"  uvicorn app.main:app --reload")
-        print(f"  pytest tests/ -v  (para testar)")
+        print("  pip install -r requirements.txt")
+        print("  uvicorn app.main:app --reload")
+        print("  pytest tests/ -v  (para testar)")
     elif name == 'nextjs-app':
         print(f"  cd {out_dir}")
-        print(f"  npm install")
-        print(f"  npm run dev")
+        print("  npm install")
+        print("  npm run dev")
 
     return 0
 
@@ -1956,7 +1949,7 @@ def cmd_docs(args):
     readme_path = os.path.join(docs_dir, "README.md")
     with open(readme_path, 'w', encoding='utf-8') as f:
         f.write(readme)
-    print(f"  ✅ docs/README.md")
+    print("  ✅ docs/README.md")
 
     # STRUCTURE.md
     struct = f"""# Estrutura do Projeto - {project_name}
@@ -1969,7 +1962,7 @@ def cmd_docs(args):
     struct_path = os.path.join(docs_dir, "STRUCTURE.md")
     with open(struct_path, 'w', encoding='utf-8') as f:
         f.write(struct)
-    print(f"  ✅ docs/STRUCTURE.md")
+    print("  ✅ docs/STRUCTURE.md")
 
     # API.md (se FastAPI)
     has_fastapi = any('fastapi' in f.lower() for f in os.listdir(path) if f.endswith('.py')) or \
@@ -1990,7 +1983,7 @@ def cmd_docs(args):
         api_path = os.path.join(docs_dir, "API.md")
         with open(api_path, 'w', encoding='utf-8') as f:
             f.write(api_doc)
-        print(f"  ✅ docs/API.md (FastAPI detectado)")
+        print("  ✅ docs/API.md (FastAPI detectado)")
 
     print(f"\n✅ Documentacao gerada em {docs_dir}/")
     print(f"   Arquivos: {len(os.listdir(docs_dir))}")
@@ -2041,7 +2034,7 @@ def _test_generate(path):
     if not os.path.exists(init_file):
         with open(init_file, 'w') as f:
             f.write("# Tests\n")
-        print(f"  ✅ tests/__init__.py")
+        print("  ✅ tests/__init__.py")
 
     # Find Python source files and generate test stubs
     generated = 0
@@ -2078,10 +2071,10 @@ def _test_generate(path):
             test_content = '"""Tests for %s."""\n' % rel
             test_content += 'import pytest\n'
             test_content += 'from %s import %s\n\n' % (import_path, imports)
-            
+
             for f in funcs[:5]:
                 test_content += 'def test_%s():\n    """Test %s."""\n    # TODO: implement\n    assert True\n\n' % (f, f)
-            
+
             for c in classes[:3]:
                 test_content += 'class Test%s:\n    """Tests for %s."""\n\n    def test_init(self):\n        """Test initialization."""\n        # TODO: implement\n        assert True\n\n' % (c, c)
             with open(test_path, 'w', encoding='utf-8') as f:
@@ -2133,7 +2126,7 @@ def _test_report(path):
         print(f"  Errors: {errors}")
         print(f"  Total:  {passed + failed + errors}")
         if failed > 0:
-            print(f"\n  Falhas:")
+            print("\n  Falhas:")
             for l in lines:
                 if 'FAILED' in l:
                     print(f"    {l}")
@@ -2154,7 +2147,7 @@ def cmd_panorama_direct(args):
     from s3_headroom import project_load, project_map
     path = args[0]
     info = project_load(path)
-    print(f"📊 ESTRUTURA DO PROJETO")
+    print("📊 ESTRUTURA DO PROJETO")
     print(f"  Linguagem: {info.get('language', 'N/A')}")
     print(f"  Arquivos:  {info['files']}")
     print(f"  Pastas:    {info['dirs']}")
@@ -2282,9 +2275,9 @@ def _orig_wrapper(args):
         return 1
     cmd = args[0]
     rest = args[1:]
-    
+
     if cmd == 'panorama':
-        from s3_headroom import project_load, project_map
+        from s3_headroom import project_load
         if not rest:
             print("Uso: panorama <path>")
             return 1
@@ -2333,7 +2326,7 @@ def cmd_router(args):
 
 def cmd_absorb(args):
     """Absorver software open-source de terceiros (oss-absorb skill).
-    
+
     A0-A6: intake → discovery → clone → license gate → decision → implement → commit.
     """
     if not args:
@@ -2362,12 +2355,11 @@ def cmd_absorb(args):
         return _absorb_check(args[1] if len(args) > 1 else "")
 
     url = args[0]
-    dry_run = "--dry-run" in args
-    
+
     print(f"📦 A0 Intake: {url}")
-    print(f"🔍 A1-A6: Pipeline completo via skill oss-absorb")
-    print(f"   Carregue oss-absorb com: skill_view(name='oss-absorb')")
-    print(f"   Depois siga o pipeline A0→A6 documentado na skill.")
+    print("🔍 A1-A6: Pipeline completo via skill oss-absorb")
+    print("   Carregue oss-absorb com: skill_view(name='oss-absorb')")
+    print("   Depois siga o pipeline A0→A6 documentado na skill.")
     return 0
 
 
@@ -2377,7 +2369,7 @@ def _absorb_check(url):
         print("Uso: hermes-workbench absorb check <url>")
         return 1
     print(f"📥 A2 Clone: {url}")
-    print(f"🛑 A3 License Gate: pendente (requer analise manual do LICENSE file)")
+    print("🛑 A3 License Gate: pendente (requer analise manual do LICENSE file)")
     print("   Clone o repo, leia o LICENSE e classifique:")
     print("   MIT/Apache/BSD → liberado | GPL/AGPL → wrap only | sem licenca → bloqueado")
     return 0
@@ -2390,21 +2382,21 @@ def cmd_status(args):
                    capture_output=True, text=True, timeout=10,
                    creationflags=sp.CREATE_NO_WINDOW)
         return name in r.stdout.lower()
-    
+
     print("=" * 40)
     print("📊 WORKBENCH STATUS")
     print("=" * 40)
     print(f"  {'🟢' if tl('ollama.exe') else '🔴'} S1 (Ollama)          $0,00 🆓")
-    print(f"  🟢 S2 (DeepSeek)        ~$0.15/M ☁️ (via API)")
-    print(f"  🟢 S3 (deepseek-pro)    ~$0.50/M 🧠 (via API)")
+    print("  🟢 S2 (DeepSeek)        ~$0.15/M ☁️ (via API)")
+    print("  🟢 S3 (deepseek-pro)    ~$0.50/M 🧠 (via API)")
     print(f"  {'🟢' if tl('wscript.exe') else '🔴'} Watchdog Guardian     wscript.exe")
     print(f"  {'🟢' if tl('pythonw.exe') else '🔴'} Watchdog (pythonw)    pythonw.exe")
-    
+
     wd = os.path.dirname(os.path.abspath(__file__))
     tools = [("s3_headroom.py","🧠 S3 Headroom"),("s3_grep.py","🔍 S3 Grep"),
              ("s1_router.py","🧭 S1 Router"),("watchdog_hermes.py","⚙️ Watchdog"),
              ("shellz_menu.bat","🖥️ Shellz Menu")]
-    print(f"\n  FERRAMENTAS INSTALADAS:")
+    print("\n  FERRAMENTAS INSTALADAS:")
     for f, n in tools:
         print(f"  {'✅' if os.path.exists(os.path.join(wd,f)) else '❌'} {n:<20} {f}")
     return 0

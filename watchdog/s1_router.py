@@ -7,9 +7,12 @@ Uso: python s1_router.py "descricao da tarefa"
 Retorno: RouterDecision com shell, modelo, custo e justificativa.
 """
 from __future__ import annotations
-import sys, re, json
-from core import RouterDecision, ShellCapability
 
+import json
+import re
+import sys
+
+from core import RouterDecision, ShellCapability
 
 # --- Capacidades das shells ---
 

@@ -2,11 +2,10 @@
 Inspired by Claude's chain-of-thought and reasoning capabilities.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
 from datetime import datetime
-import json
-import os
+from typing import Dict, List
 
 try:
     from logger import get_logger
@@ -36,7 +35,7 @@ class Thought:
     source: str = ""
 
 
-@dataclass 
+@dataclass
 class Decision:
     """A decision made during reasoning."""
     choice: str
@@ -48,13 +47,13 @@ class Decision:
 
 class ReasoningEngine:
     """Structured reasoning for complex tasks."""
-    
+
     def __init__(self):
         self.steps: List[ReasoningStep] = []
         self.thoughts: List[Thought] = []
         self.decisions: List[Decision] = []
         self._start_time = datetime.now()
-    
+
     def think(self, content: str) -> ReasoningStep:
         """Add a thinking step."""
         step = ReasoningStep(
@@ -64,7 +63,7 @@ class ReasoningEngine:
         )
         self.steps.append(step)
         return step
-    
+
     def analyze(self, content: str) -> ReasoningStep:
         """Analyze a problem or situation."""
         step = ReasoningStep(
@@ -74,7 +73,7 @@ class ReasoningEngine:
         )
         self.steps.append(step)
         return step
-    
+
     def plan(self, steps: List[str]) -> ReasoningStep:
         """Create a structured plan."""
         content = "\n".join(f"{i+1}. {s}" for i, s in enumerate(steps))
@@ -85,7 +84,7 @@ class ReasoningEngine:
         )
         self.steps.append(step)
         return step
-    
+
     def verify(self, criteria: Dict[str, bool]) -> ReasoningStep:
         """Verify results against criteria."""
         passed = sum(1 for v in criteria.values() if v)
@@ -100,7 +99,7 @@ class ReasoningEngine:
         )
         self.steps.append(step)
         return step
-    
+
     def decide(self, choice: str, alternatives: List[str],
                reasoning: str, confidence: float = 0.0) -> Decision:
         """Make a reasoned decision."""
@@ -112,7 +111,7 @@ class ReasoningEngine:
             timestamp=datetime.now().isoformat()
         )
         self.decisions.append(decision)
-        
+
         step = ReasoningStep(
             id=len(self.steps) + 1,
             type="decide",
@@ -120,37 +119,37 @@ class ReasoningEngine:
         )
         self.steps.append(step)
         return decision
-    
+
     def add_insight(self, content: str, confidence: float = 0.5) -> Thought:
         """Add an insight."""
         thought = Thought(content=content, type="insight", confidence=confidence)
         self.thoughts.append(thought)
         return thought
-    
+
     def summarize(self) -> str:
         """Summarize the reasoning chain."""
         if not self.steps:
             return "No reasoning steps."
-        
+
         lines = ["=== Reasoning Chain ==="]
         for step in self.steps:
             icon = {"think": "🧠", "analyze": "🔍",
                     "plan": "📋", "verify": "✅", "decide": "🎯"}
             icon_char = icon.get(step.type, "▶")
             lines.append(f"{icon_char} Step {step.id} ({step.type}): {step.content[:100]}")
-        
+
         if self.decisions:
             lines.append(f"\n=== Decisions ({len(self.decisions)}) ===")
             for d in self.decisions:
                 lines.append(f"  - {d.choice} (confidence: {d.confidence:.0%})")
-        
+
         if self.thoughts:
             lines.append(f"\n=== Insights ({len(self.thoughts)}) ===")
             for t in self.thoughts[-3:]:  # Last 3
                 lines.append(f"  - {t.content[:120]}")
-        
+
         return "\n".join(lines)
-    
+
     def get_stats(self) -> dict:
         return {
             "steps": len(self.steps),

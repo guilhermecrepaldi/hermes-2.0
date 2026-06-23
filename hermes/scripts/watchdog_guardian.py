@@ -7,7 +7,6 @@ Garante que watchdog + Ollama estao rodando 24/7.
 
 import os
 import subprocess
-import sys
 from datetime import datetime
 
 # ─── CONFIG ───

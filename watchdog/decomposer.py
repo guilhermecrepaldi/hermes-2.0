@@ -3,9 +3,10 @@ Breaks complex tasks into smaller, executable subtasks.
 Like Claude Code's automatic multi-step planning.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
 from datetime import datetime
+from typing import List
 
 try:
     from logger import get_logger
@@ -27,7 +28,7 @@ class SubTask:
     result: str = ""
     max_retries: int = 2
     retries: int = 0
-    
+
     def can_run(self, done_ids: set) -> bool:
         """Check if all dependencies are met."""
         return all(dep in done_ids for dep in self.dependencies)
@@ -40,7 +41,7 @@ class TaskPlan:
     subtasks: List[SubTask] = field(default_factory=list)
     created_at: str = ""
     parallel_groups: List[List[str]] = field(default_factory=list)
-    
+
     def __post_init__(self):
         if not self.created_at:
             self.created_at = datetime.now().isoformat()
@@ -48,18 +49,18 @@ class TaskPlan:
 
 class TaskDecomposer:
     """Automatically breaks complex tasks into executable subtasks.
-    
+
     Analyzes the task, identifies the key steps,
     creates dependency-aware execution plan.
     """
-    
+
     def __init__(self):
         self.plans: List[TaskPlan] = []
-    
+
     def decompose(self, task: str) -> TaskPlan:
         """Break a complex task into subtasks."""
         task_lower = task.lower()
-        
+
         # Analyze task type
         if self._is_coding_task(task_lower):
             plan = self._decompose_code_task(task)
@@ -71,31 +72,31 @@ class TaskDecomposer:
             plan = self._decompose_analysis_task(task)
         else:
             plan = self._decompose_general_task(task)
-        
+
         # Identify parallel groups
         plan.parallel_groups = self._find_parallel_groups(plan.subtasks)
-        
+
         self.plans.append(plan)
         logger.info(f"Decomposed: {task[:50]} -> {len(plan.subtasks)} subtasks")
         return plan
-    
+
     def _is_coding_task(self, task: str) -> bool:
         return any(w in task for w in ["criar", "create", "build", "implement",
                                         "function", "class", "api", "endpoint",
                                         "refactor", "fix", "debug", "bug"])
-    
+
     def _is_research_task(self, task: str) -> bool:
         return any(w in task for w in ["pesquisar", "research", "find",
                                         "search", "study", "learn", "understand"])
-    
+
     def _is_setup_task(self, task: str) -> bool:
         return any(w in task for w in ["setup", "install", "configure", "init",
                                         "start", "create project", "new project"])
-    
+
     def _is_analysis_task(self, task: str) -> bool:
         return any(w in task for w in ["analyze", "review", "audit", "check",
                                         "verify", "validate", "test"])
-    
+
     def _decompose_code_task(self, task: str) -> TaskPlan:
         return TaskPlan(
             original=task,
@@ -108,7 +109,7 @@ class TaskDecomposer:
                 SubTask("S6", "Verify and validate", "verify", dependencies=["S4", "S5"]),
             ]
         )
-    
+
     def _decompose_research_task(self, task: str) -> TaskPlan:
         return TaskPlan(
             original=task,
@@ -119,7 +120,7 @@ class TaskDecomposer:
                 SubTask("S4", "Document conclusions", "document", dependencies=["S3"]),
             ]
         )
-    
+
     def _decompose_setup_task(self, task: str) -> TaskPlan:
         return TaskPlan(
             original=task,
@@ -131,7 +132,7 @@ class TaskDecomposer:
                 SubTask("S5", "Verify setup works", "verify", dependencies=["S4"]),
             ]
         )
-    
+
     def _decompose_analysis_task(self, task: str) -> TaskPlan:
         return TaskPlan(
             original=task,
@@ -142,7 +143,7 @@ class TaskDecomposer:
                 SubTask("S4", "Generate recommendations", "document", dependencies=["S3"]),
             ]
         )
-    
+
     def _decompose_general_task(self, task: str) -> TaskPlan:
         return TaskPlan(
             original=task,
@@ -153,29 +154,29 @@ class TaskDecomposer:
                 SubTask("S4", "Verify the result", "verify", dependencies=["S3"]),
             ]
         )
-    
+
     def _find_parallel_groups(self, subtasks: List[SubTask]) -> List[List[str]]:
         """Find subtasks that can run in parallel."""
         done = set()
         groups = []
         remaining = {s.id for s in subtasks}
-        
+
         while remaining:
             # Find tasks whose deps are all satisfied
-            ready = [s for s in subtasks if s.id in remaining and 
+            ready = [s for s in subtasks if s.id in remaining and
                      all(d in done for d in s.dependencies)]
             if not ready:
                 # Break dependency cycles
                 ready = [subtasks[0]]
-            
+
             group = [s.id for s in ready]
             groups.append(group)
             for r in ready:
                 done.add(r.id)
                 remaining.discard(r.id)
-        
+
         return groups
-    
+
     def get_plan_summary(self, plan: TaskPlan) -> str:
         """Get a human-readable plan summary."""
         lines = [
@@ -184,7 +185,7 @@ class TaskDecomposer:
             f"Parallel groups: {len(plan.parallel_groups)}",
             "",
         ]
-        
+
         for i, group in enumerate(plan.parallel_groups):
             lines.append(f"Group {i+1}:")
             for subtask_id in group:
@@ -193,9 +194,9 @@ class TaskDecomposer:
                        "verify": "✅", "document": "📝", "research": "📚",
                        "config": "⚙️"}.get(st.type, "•")
                 lines.append(f"  {icon} {st.id}: {st.description} [{st.estimated_effort}]")
-        
+
         return "\n".join(lines)
-    
+
     def get_stats(self) -> dict:
         return {
             "total_plans": len(self.plans),

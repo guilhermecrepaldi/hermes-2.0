@@ -3,11 +3,12 @@ Manages parallel execution of subtasks with dependency awareness.
 Inspired by Claude Code's subagent system.
 """
 from __future__ import annotations
+
 import time
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List, Callable
 from datetime import datetime
 from enum import Enum
+from typing import Callable, Dict, List, Optional
 
 try:
     from logger import get_logger
@@ -44,17 +45,17 @@ class OrchestratedTask:
 
 class Orchestrator:
     """Intelligent task orchestration with parallel execution.
-    
+
     Takes a plan from TaskDecomposer, executes subtasks
     respecting dependencies, in parallel where possible.
     """
-    
+
     def __init__(self):
         self.tasks: Dict[str, OrchestratedTask] = {}
         self.history: List[dict] = []
         self._running: set = set()
         self._done: set = set()
-    
+
     def plan(self, tasks: List[dict]) -> None:
         """Load tasks into orchestrator from a plan."""
         for t in tasks:
@@ -66,25 +67,25 @@ class Orchestrator:
                 max_retries=t.get("max_retries", 2),
             )
             self.tasks[task.id] = task
-    
+
     def execute(self, executor: Optional[Callable] = None) -> List[OrchestratedTask]:
         """Execute all tasks respecting dependencies."""
         results = []
-        
+
         while self._pending_tasks():
             # Find ready tasks
             ready = self._ready_tasks()
-            
+
             if not ready:
                 logger.warning("Deadlock detected: waiting tasks have unmet dependencies")
                 break
-            
+
             # Execute ready tasks (in parallel if executor supports it)
             for task in ready:
                 task.status = TaskStatus.RUNNING
                 task.started_at = datetime.now().isoformat()
                 self._running.add(task.id)
-                
+
                 start = time.time()
                 try:
                     if executor:
@@ -94,15 +95,15 @@ class Orchestrator:
                     else:
                         task.status = TaskStatus.DONE
                         task.result = f"Task {task.id} completed"
-                    
+
                     self._done.add(task.id)
                     self._running.discard(task.id)
                     task.finished_at = datetime.now().isoformat()
                     task.duration = time.time() - start
                     results.append(task)
-                    
+
                     logger.info(f"Task {task.id} done ({task.duration:.1f}s)")
-                    
+
                 except Exception as e:
                     task.retries += 1
                     if task.retries >= task.max_retries:
@@ -115,7 +116,7 @@ class Orchestrator:
                         task.status = TaskStatus.PENDING
                         self._running.discard(task.id)
                         logger.info(f"Task {task.id} will retry ({task.retries}/{task.max_retries})")
-        
+
         # Record execution history
         self.history.append({
             "timestamp": datetime.now().isoformat(),
@@ -124,12 +125,12 @@ class Orchestrator:
             "failed": sum(1 for t in self.tasks.values() if t.status == TaskStatus.FAILED),
             "duration": sum(t.duration for t in self.tasks.values()),
         })
-        
+
         return results
-    
+
     def _pending_tasks(self) -> bool:
         return any(t.status == TaskStatus.PENDING for t in self.tasks.values())
-    
+
     def _ready_tasks(self) -> List[OrchestratedTask]:
         """Find tasks whose dependencies are all satisfied."""
         return [
@@ -137,7 +138,7 @@ class Orchestrator:
             if t.status == TaskStatus.PENDING
             and all(dep in self._done for dep in t.dependencies)
         ]
-    
+
     def get_status(self) -> dict:
         """Get orchestrator status."""
         return {
@@ -148,10 +149,10 @@ class Orchestrator:
             "failed": sum(1 for t in self.tasks.values() if t.status == TaskStatus.FAILED),
             "history": len(self.history),
         }
-    
+
     def get_summary(self) -> str:
         """Get human-readable execution summary."""
-        lines = [f"=== Execution Summary ==="]
+        lines = ["=== Execution Summary ==="]
         for task in self.tasks.values():
             icon = {"done": "OK", "failed": "X", "running": "...",
                     "pending": "  ", "skipped": "-"}.get(task.status.value, "?")
@@ -159,7 +160,7 @@ class Orchestrator:
             lines.append(f"  [{icon}] {task.id}: {task.description} {dur}")
             if task.error:
                 lines.append(f"        Error: {task.error[:80]}")
-        
+
         status = self.get_status()
         lines.append(f"\nDone: {status['done']}/{status['total']} | Failed: {status['failed']}")
         return "\n".join(lines)

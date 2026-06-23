@@ -4,9 +4,9 @@ Checagem de watchdog, Ollama, tray e shellz.
 Uso: from monitor import proc_check, status_report
 """
 from __future__ import annotations
+
 import os
 import subprocess
-from typing import Optional
 
 
 def proc_check(name: str) -> bool:

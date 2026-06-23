@@ -4,23 +4,23 @@ Integrates all intelligence modules: reasoning, orchestrator,
 auto-healer, proactive scanner, semantic memory, self-reflection.
 """
 from __future__ import annotations
+
 import sys
-import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "watchdog"))
 
-from core import HermesHarness
-from engine import carregar_progresso, salvar_progresso, HookManager, CheckpointManager
-from logger import get_logger
-from intelligence import ProjectScanner
-from orchestrator import Orchestrator
-from healer import AutoHealer
-from reasoning import ReasoningEngine
 from compactor import compact_conversation, get_compact_stats
-from smemory import SemanticMemory
-from reflector import Reflector
+from core import HermesHarness
+from engine import CheckpointManager, HookManager, salvar_progresso
+from healer import AutoHealer
+from intelligence import ProjectScanner
+from logger import get_logger
+from orchestrator import Orchestrator
 from proactive import ProactiveAnalyzer
+from reasoning import ReasoningEngine
+from reflector import Reflector
+from smemory import SemanticMemory
 
 logger = get_logger(__name__)
 
@@ -40,10 +40,10 @@ class HermesLoop:
         self.running = True
         self.task_count = 0
         self.conversation = []
-        
+
         HookManager.setup_default()
         CheckpointManager.auto_compact()
-        
+
         self._auto_init()
         logger.info("Hermes v1.0 — fully autonomous")
 
@@ -53,17 +53,17 @@ class HermesLoop:
         self.scanner.scan()
         ctx = self.scanner.get_summary()
         logger.info(f"Project: {ctx[:80]}")
-        
+
         # Check past reflections for improvement suggestions
         suggestions = self.reflector.suggest_improvements()
         if suggestions:
             logger.info(f"Self-improvement: {suggestions[0]}")
-        
+
         # Proactive scan for issues
         issues = self.proactive.scan_all()
         if issues:
             logger.info(f"Proactive: {len(issues)} suggestions found")
-        
+
         # Load semantic memory for context
         mem = self.memory.recall("context task help", max_results=3)
         if mem:
@@ -73,7 +73,7 @@ class HermesLoop:
         print("Hermes v1.0 — Autonomous Agent")
         print(f"  Project: {self.scanner.root.name}")
         print(f"  Memory: {self.memory.get_stats()['total']} entries")
-        
+
         while self.running:
             try:
                 user_input = self._get_input()
@@ -85,23 +85,23 @@ class HermesLoop:
 
                 self.task_count += 1
                 self.conversation.append({"role": "user", "content": user_input})
-                
+
                 # 1. Context engineering
                 self.harness.update_context(user_input)
                 salvar_progresso("INPUT", user_input[:40])
-                
+
                 # 2. Check semantic memory for past learnings
                 past = self.memory.recall(user_input[:50], max_results=2)
                 if past:
                     logger.info(f"Memory recall: {past[0].content[:60]}...")
-                
+
                 # 3. Use reasoning engine for complex tasks
                 self.reasoning.think(f"Task: {user_input[:80]}")
-                
+
                 # 4. Choose and execute action (with auto-healing)
                 action = self.harness.choose_action(user_input)
                 result = self.harness.execute_action(action, user_input)
-                
+
                 # 5. Auto-heal if failed
                 if hasattr(result, 'success') and not result.success:
                     healed = self.healer.heal(
@@ -116,15 +116,15 @@ class HermesLoop:
                             getattr(result, 'error', 'unknown'),
                             healed.get("suggestion", "try different approach")
                         )
-                
+
                 self.harness.update_progress(result)
                 salvar_progresso(action.name, str(getattr(result, 'summary', ''))[:80])
                 self._display_result(result)
-                
+
                 # 6. Store outcome in semantic memory
                 if hasattr(result, 'success') and result.success:
                     self.memory.remember_success(action.name, str(getattr(result, 'summary', ''))[:60])
-                
+
                 # 7. Auto-checkpoint
                 if self.task_count % 5 == 0:
                     CheckpointManager.save()
@@ -136,10 +136,10 @@ class HermesLoop:
                     )
 
                 self.conversation.append({"role": "assistant", "content": str(getattr(result, 'summary', ''))})
-                
+
                 # 8. Auto-compaction if needed
                 if self.task_count > 3 and self.task_count % 5 == 0:
-                    text = " ".join(m.get("content", "") for m in self.conversation)
+                    " ".join(m.get("content", "") for m in self.conversation)
                     if get_compact_stats().get("total_compactions", 0) < len(self.conversation):
                         self.conversation = compact_conversation(self.conversation)
                         logger.info("Conversation compacted")

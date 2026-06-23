@@ -4,6 +4,7 @@ Uso: from logger import get_logger; log = get_logger(__name__)
 Ative HERMES_DEBUG=1 no ambiente para verbose.
 """
 from __future__ import annotations
+
 import logging
 import os
 import sys
