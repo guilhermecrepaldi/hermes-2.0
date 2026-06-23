@@ -4,7 +4,7 @@ import sys, os
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "watchdog"))
 
 from error_mapping import (
-    map_error, format_error, HermesError, ERROR_CATALOG
+    map_error, format_error, ERROR_CATALOG
 )
 
 
