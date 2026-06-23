@@ -1,71 +1,158 @@
 #!/usr/bin/env python3
-"""
-Hermes Agent Loop — Fable 5 inspired.
-<20 linhas de orquestracao pura. >80% da complexidade no harness e engine.
+"""Hermes Agent Loop v1.0 — Fully autonomous end-to-end.
+Integrates all intelligence modules: reasoning, orchestrator,
+auto-healer, proactive scanner, semantic memory, self-reflection.
 """
 from __future__ import annotations
 import sys
 import os
+from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "watchdog"))
+sys.path.insert(0, str(Path(__file__).resolve().parent / "watchdog"))
 
 from core import HermesHarness
-from engine import (
-    carregar_progresso, salvar_progresso, HookManager,
-    CheckpointManager, InitializerAgent, CodingAgent
-)
+from engine import carregar_progresso, salvar_progresso, HookManager, CheckpointManager
 from logger import get_logger
+from intelligence import ProjectScanner
+from orchestrator import Orchestrator
+from healer import AutoHealer
+from reasoning import ReasoningEngine
+from compactor import compact_conversation, get_compact_stats
+from smemory import SemanticMemory
+from reflector import Reflector
+from proactive import ProactiveAnalyzer
 
 logger = get_logger(__name__)
 
 
 class HermesLoop:
-    """Agent loop (<20 linhas de logica)."""
+    """Agent loop with full intelligence integration."""
 
     def __init__(self):
         self.harness = HermesHarness()
+        self.reasoning = ReasoningEngine()
+        self.healer = AutoHealer()
+        self.memory = SemanticMemory()
+        self.reflector = Reflector()
+        self.scanner = ProjectScanner(str(Path(__file__).resolve().parent))
+        self.proactive = ProactiveAnalyzer(str(Path(__file__).resolve().parent))
+        self.orch = Orchestrator()
         self.running = True
+        self.task_count = 0
+        self.conversation = []
+        
         HookManager.setup_default()
         CheckpointManager.auto_compact()
-        logger.info("Hermes Agent Loop + Engine OK")
+        
+        self._auto_init()
+        logger.info("Hermes v1.0 — fully autonomous")
+
+    def _auto_init(self):
+        """Auto-initialize: scan project, load context, check health."""
+        # Scan project autonomously
+        self.scanner.scan()
+        ctx = self.scanner.get_summary()
+        logger.info(f"Project: {ctx[:80]}")
+        
+        # Check past reflections for improvement suggestions
+        suggestions = self.reflector.suggest_improvements()
+        if suggestions:
+            logger.info(f"Self-improvement: {suggestions[0]}")
+        
+        # Proactive scan for issues
+        issues = self.proactive.scan_all()
+        if issues:
+            logger.info(f"Proactive: {len(issues)} suggestions found")
+        
+        # Load semantic memory for context
+        mem = self.memory.recall("context task help", max_results=3)
+        if mem:
+            logger.info(f"Memory: {len(mem)} relevant past learnings")
 
     def run(self) -> None:
-        print("\U0001f680 Hermes Agent Loop v0.2 (Fable 5)")
+        print("Hermes v1.0 — Autonomous Agent")
+        print(f"  Project: {self.scanner.root.name}")
+        print(f"  Memory: {self.memory.get_stats()['total']} entries")
+        
         while self.running:
             try:
                 user_input = self._get_input()
-                if not user_input or user_input.strip().lower() in ('exit', 'quit'):
+                if not user_input or user_input.strip().lower() in ("exit", "quit"):
                     self._handle_exit()
                     break
                 if not user_input.strip():
                     continue
 
+                self.task_count += 1
+                self.conversation.append({"role": "user", "content": user_input})
+                
+                # 1. Context engineering
                 self.harness.update_context(user_input)
                 salvar_progresso("INPUT", user_input[:40])
-
-                # Context Engineering: load progress primeiro
-                ctx = carregar_progresso()
-                self.harness.context.hermes_progress = str(ctx.get("feito", []))
-
-                # Choose + execute via harness
+                
+                # 2. Check semantic memory for past learnings
+                past = self.memory.recall(user_input[:50], max_results=2)
+                if past:
+                    logger.info(f"Memory recall: {past[0].content[:60]}...")
+                
+                # 3. Use reasoning engine for complex tasks
+                self.reasoning.think(f"Task: {user_input[:80]}")
+                
+                # 4. Choose and execute action (with auto-healing)
                 action = self.harness.choose_action(user_input)
                 result = self.harness.execute_action(action, user_input)
+                
+                # 5. Auto-heal if failed
+                if hasattr(result, 'success') and not result.success:
+                    healed = self.healer.heal(
+                        getattr(result, 'error', '') or str(result),
+                        {"input": user_input}
+                    )
+                    if healed.get("healed"):
+                        logger.info(f"Auto-healed: {healed.get('strategy')}")
+                        result = self.harness.execute_action(action, user_input + " [retry]")
+                    else:
+                        self.memory.remember_error(
+                            getattr(result, 'error', 'unknown'),
+                            healed.get("suggestion", "try different approach")
+                        )
+                
                 self.harness.update_progress(result)
-
-                salvar_progresso(action.name, result.summary[:80])
+                salvar_progresso(action.name, str(getattr(result, 'summary', ''))[:80])
                 self._display_result(result)
-
-                # Auto-checkpoint a cada 5 acoes
-                if len(self.harness.context.recent_actions) % 5 == 0:
+                
+                # 6. Store outcome in semantic memory
+                if hasattr(result, 'success') and result.success:
+                    self.memory.remember_success(action.name, str(getattr(result, 'summary', ''))[:60])
+                
+                # 7. Auto-checkpoint
+                if self.task_count % 5 == 0:
                     CheckpointManager.save()
+                    # Self-reflection every 5 tasks
+                    self.reflector.reflect(
+                        task=user_input[:60],
+                        outcome="success" if getattr(result, 'success', True) else "failed",
+                        steps_taken=self.task_count,
+                    )
+
+                self.conversation.append({"role": "assistant", "content": str(getattr(result, 'summary', ''))})
+                
+                # 8. Auto-compaction if needed
+                if self.task_count > 3 and self.task_count % 5 == 0:
+                    text = " ".join(m.get("content", "") for m in self.conversation)
+                    if get_compact_stats().get("total_compactions", 0) < len(self.conversation):
+                        self.conversation = compact_conversation(self.conversation)
+                        logger.info("Conversation compacted")
 
             except KeyboardInterrupt:
                 self._handle_exit()
                 break
             except Exception as e:
-                logger.error(f"Loop error: {e}", exc_info=True)
-                self.harness.handle_error(e)
-                print(f"\u274c Erro: {e}")
+                logger.error(f"Loop: {e}", exc_info=True)
+                # Try auto-heal for loop errors
+                healed = self.healer.heal(str(e), {"error": str(e)})
+                if not healed.get("healed"):
+                    print(f"Error: {e}")
 
     def _get_input(self) -> str:
         try:
@@ -78,15 +165,18 @@ class HermesLoop:
     def _handle_exit(self) -> None:
         self.running = False
         CheckpointManager.save("exit")
-        print(f"\n\U0001f44b Ate logo!")
+        # Final reflection
+        stats = self.reflector.get_stats()
+        print(f"\nSessions: {stats.get('total', 0)} | Success: {stats.get('success_rate', 'N/A')}")
+        print("Bye!")
 
     def _display_result(self, result) -> None:
         if hasattr(result, 'summary'):
-            print(f"\u2705 {result.summary}")
+            print(f"  {result.summary}")
         elif isinstance(result, dict):
-            print(f"\u2705 {result.get('summary', str(result))}")
+            print(f"  {result.get('summary', str(result))}")
         elif result:
-            print(f"\u2705 {result}")
+            print(f"  {result}")
 
 
 def main() -> None:
