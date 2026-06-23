@@ -16,6 +16,7 @@ from engine import CheckpointManager, HookManager, salvar_progresso
 from healer import AutoHealer
 from intelligence import ProjectScanner
 from logger_pro import setup_hermes_logging
+from telemetry import telemetry
 from logger import get_logger
 from orchestrator import Orchestrator
 from proactive import ProactiveAnalyzer
@@ -87,6 +88,9 @@ class HermesLoop:
 
                 self.task_count += 1
                 self.conversation.append({"role": "user", "content": user_input})
+                
+                # TELEMETRIA OBRIGATORIA — toda interacao
+                telemetry.record(user_input=user_input, action_taken="processing")
 
                 # 1. Context engineering
                 self.harness.update_context(user_input)
