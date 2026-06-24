@@ -226,54 +226,41 @@ class Telemetry:
         return entries
     
     def mini_report(self) -> str:
-        """Mini-telemetria com breakdown por shell (S3 main, S1 worker).
+        """Mini-telemetria: S1 tokens (economia vs S3) + S3 tokens/custo.
         Exibir ao final de CADA resposta. NUNCA omitir.
         """
         entries = self.get_all_entries(limit=200)
         
-        # Agrupa por shell (normaliza nomes)
-        shell_map = {
-            "S3": "S3 DeepSeek", "S3_premium": "S3 DeepSeek",
-            "S2_cheap": "S3 DeepSeek", "S1_nuvem": "S3 DeepSeek",
-            "S1": "S1 Ollama", "S1_local": "S1 Ollama",
-            "desconhecido": "S3 DeepSeek",
-        }
-        shell_stats: dict = {}
-        total_tokens = 0
-        total_cost = 0.0
+        s1_tokens = 0
+        s3_tokens = 0
+        s3_cost = 0.0
         
         for e in entries:
-            raw_shell = e.get("shell_used", "")
-            shell = shell_map.get(raw_shell, raw_shell or "S3 DeepSeek")
+            raw = e.get("shell_used", "")
             tok = e.get("total_tokens", 0)
             cst = e.get("cost", 0.0)
             
-            if shell not in shell_stats:
-                shell_stats[shell] = {"tokens": 0, "cost": 0.0}
-            shell_stats[shell]["tokens"] += tok
-            shell_stats[shell]["cost"] += cst
-            total_tokens += tok
-            total_cost += cst
+            # S1 = Ollama/local/gratis
+            if raw in ("S1", "S1_local") or "ollama" in e.get("provider", "").lower():
+                s1_tokens += tok
+            # S3 = DeepSeek/cloud/pago
+            else:
+                s3_tokens += tok
+                s3_cost += cst
         
-        # Ordena
-        sorted_shells = sorted(shell_stats.items(), key=lambda x: x[1]["cost"], reverse=True)
+        # Economia: o que S1 teria custado se fosse S3 ($0.30/M medio)
+        S3_RATE_PER_TOKEN = 0.30 / 1_000_000
+        s1_economia = s1_tokens * S3_RATE_PER_TOKEN
         
-        lines = [
-            "── telemetria ── tokens  ────  custo ────",
-        ]
+        lines = ["── telemetria ───────────────"]
         
-        for shell, stats in sorted_shells:
-            icon = "O" if "S1" in shell or "Ollama" in shell or "local" in shell.lower() else "$"
-            label = f"{icon} {shell}"
-            tok_str = f"{stats['tokens']:>6}" if stats['tokens'] else "     0"
-            cost_str = f"${stats['cost']:.4f}"
-            lines.append(f"  {label:<20} {tok_str}  {cost_str}")
+        if s1_tokens > 0:
+            lines.append(f"  S1 ollama: {s1_tokens} tok (economia ${s1_economia:.4f})")
+        if s3_tokens > 0:
+            lines.append(f"  S3 deep:   {s3_tokens} tok = ${s3_cost:.4f}")
         
-        if not shell_stats or total_tokens == 0:
-            lines.append("  (nenhuma atividade registrada nesta sessao)")
-        
-        lines.append(f"  {'─'*38}")
-        lines.append(f"  {'TOTAL':<20} {total_tokens:>6}  ${total_cost:.4f}")
+        if s1_tokens == 0 and s3_tokens == 0:
+            lines.append("  (nenhuma atividade registrada)")
         
         return "\\n".join(lines)
 
