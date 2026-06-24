@@ -18,6 +18,43 @@ TELEMETRY_DIR = Path.home() / ".hermes" / "telemetry"
 TELEMETRY_FILE = TELEMETRY_DIR / "telemetry.jsonl"
 
 
+# ─── TABELA DE PRECOS POR PROVIDER ───────────────
+# Referencia: precos por 1M tokens (Jun/2026)
+PROVIDER_RATES = {
+    "ollama":      {"input": 0.0, "output": 0.0, "name": "Local"},
+    "llama.cpp":   {"input": 0.0, "output": 0.0, "name": "Local"},
+    "deepseek":    {"input": 0.14, "output": 0.42, "name": "DeepSeek"},
+    "openrouter":  {"input": 0.15, "output": 0.60, "name": "OpenRouter"},
+    "gemini":      {"input": 0.10, "output": 0.40, "name": "Gemini"},
+    "nvidia":      {"input": 0.20, "output": 0.80, "name": "NVIDIA"},
+    "openai":      {"input": 2.50, "output": 10.00, "name": "OpenAI"},
+    "anthropic":   {"input": 3.00, "output": 15.00, "name": "Anthropic"},
+}
+
+# Mapa de shell para tier
+SHELL_TIERS = {
+    "S1_local":    "local",
+    "S1":          "local",
+    "S2_cheap":    "cloud",
+    "S2":          "cloud",
+    "S3_premium":  "cloud",
+    "S3":          "cloud",
+    "S1_nuvem":    "cloud",
+}
+
+
+def estimate_cost(provider: str, tokens_input: int, tokens_output: int) -> float:
+    """Estima custo em USD baseado na tabela de precos."""
+    rates = PROVIDER_RATES.get(provider.lower(), {"input": 0.15, "output": 0.60})
+    cost = (tokens_input * rates["input"] + tokens_output * rates["output"]) / 1_000_000
+    return round(cost, 6)
+
+
+def get_tier(shell: str) -> str:
+    """Retorna 'local' ou 'cloud' para um shell."""
+    return SHELL_TIERS.get(shell, "cloud")
+
+
 @dataclass
 class TelemetryEntry:
     """Uma entrada de telemetria. Imutavel apos escrita."""
@@ -102,6 +139,10 @@ class Telemetry:
         """
         self._entry_count += 1
         
+        # Auto-calcula custo se nao foi passado
+        if cost == 0.0 and (tokens_input > 0 or tokens_output > 0):
+            cost = estimate_cost(provider, tokens_input, tokens_output)
+        
         entry = TelemetryEntry(
             timestamp=datetime.now(timezone.utc).isoformat(),
             session_id=self._session_id,
@@ -185,38 +226,50 @@ class Telemetry:
         return entries
     
     def mini_report(self) -> str:
-        """Mini-telemetria para exibir ao final de cada resposta.
-        Mostra: cloud vs local tokens, custo, shell.
-        Formato: uma linha compacta.
+        """Mini-telemetria com breakdown por shell (S1_local, S2_cheap, S3_premium).
+        Mostra: tokens, custo por shell, total.
         """
         entries = self.get_all_entries(limit=100)
         
-        total_tokens = sum(e.get("total_tokens", 0) for e in entries)
-        total_cost = sum(e.get("cost", 0) for e in entries)
+        # Agrupa por shell
+        shell_stats: dict = {}
+        total_tokens = 0
+        total_cost = 0.0
         
-        # Separa cloud vs local
-        cloud_shells = {"S2_cheap", "S3_premium", "S1_nuvem"}
-        cloud_tokens = sum(e.get("total_tokens", 0) for e in entries 
-                          if e.get("shell_used", "") in cloud_shells)
-        local_tokens = sum(e.get("total_tokens", 0) for e in entries 
-                          if e.get("shell_used", "") in {"S1_local"})
+        for e in entries:
+            shell = e.get("shell_used", "desconhecido")
+            tok = e.get("total_tokens", 0)
+            cst = e.get("cost", 0.0)
+            prov = e.get("provider", "")
+            
+            if shell not in shell_stats:
+                shell_stats[shell] = {"tokens": 0, "cost": 0.0, "provider": prov}
+            shell_stats[shell]["tokens"] += tok
+            shell_stats[shell]["cost"] += cst
+            total_tokens += tok
+            total_cost += cst
         
-        cloud_cost = sum(e.get("cost", 0) for e in entries 
-                        if e.get("shell_used", "") in cloud_shells)
+        # Ordena shells por custo (maior primeiro)
+        sorted_shells = sorted(shell_stats.items(), key=lambda x: x[1]["cost"], reverse=True)
         
         lines = [
-            "── telemetria ─────────────────────",
+            "── telemetria ── tokens  ────  custo ────",
         ]
         
-        if total_tokens:
-            lines.append(f"  Tokens: {total_tokens} total")
-            if cloud_tokens:
-                lines.append(f"  Cloud:  {cloud_tokens} tok ${cloud_cost:.4f}")
-            if local_tokens:
-                lines.append(f"  Local:  {local_tokens} tok $0.0000")
+        for shell, stats in sorted_shells:
+            # Icone baseado no tier
+            tier = get_tier(shell)
+            icon = "O" if tier == "local" else "$"
+            label = f"{icon} {shell}"
+            tok_str = f"{stats['tokens']:>6}" if stats['tokens'] else "     0"
+            cost_str = f"${stats['cost']:.4f}"
+            lines.append(f"  {label:<17} {tok_str}  {cost_str}")
         
-        lines.append(f"  Custo:  ${total_cost:.4f}")
-        lines.append("────────────────────────────────────")
+        if not shell_stats:
+            lines.append("  (nenhuma atividade registrada)")
+        
+        lines.append(f"  {'─'*35}")
+        lines.append(f"  {'TOTAL':<17} {total_tokens:>6}  ${total_cost:.4f}")
         
         return "\\n".join(lines)
 

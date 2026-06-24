@@ -138,8 +138,46 @@ def test_record_interaction():
 
 
 def test_mini_report_produces_text():
-    """mini_report() deve produzir texto com headings esperados."""
+    """mini_report() deve produzir texto com breakdown."""
     from telemetry import telemetry
     report = telemetry.mini_report()
     assert "telemetria" in report
-    assert "Tokens" in report or "Custo" in report
+
+
+def test_estimate_cost_deepseek():
+    """estimate_cost deve calcular DeepSeek corretamente."""
+    from telemetry import estimate_cost
+    # 200 tokens input ($0.14/M) + 300 output ($0.42/M)
+    cost = estimate_cost("deepseek", 200, 300)
+    expected = (200 * 0.14 + 300 * 0.42) / 1_000_000
+    assert abs(cost - expected) < 0.000001
+
+
+def test_estimate_cost_zero_local():
+    """estimate_cost para local deve ser 0."""
+    from telemetry import estimate_cost
+    cost = estimate_cost("ollama", 5000, 1000)
+    assert cost == 0.0
+
+
+def test_estimate_cost_unknown_provider():
+    """estimate_cost para provider desconhecido usa fallback."""
+    from telemetry import estimate_cost
+    cost = estimate_cost("desconhecido", 1000, 500)
+    assert cost > 0  # Fallback rate deve > 0
+
+
+def test_get_tier_local():
+    """get_tier para S1_local deve retornar 'local'."""
+    from telemetry import get_tier
+    assert get_tier("S1_local") == "local"
+    assert get_tier("S1") == "local"
+
+
+def test_get_tier_cloud():
+    """get_tier para S2_cheap deve retornar 'cloud'."""
+    from telemetry import get_tier
+    assert get_tier("S2_cheap") == "cloud"
+    assert get_tier("S3_premium") == "cloud"
+    assert get_tier("S1_nuvem") == "cloud"
+    assert get_tier("S3") == "cloud"

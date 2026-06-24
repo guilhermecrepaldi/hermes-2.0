@@ -22,9 +22,19 @@ def test_different_url_different_instance():
 
 
 def test_client_no_credentials():
-    """Sem URL/KEY, connected deve ser False."""
+    """Sem URL/KEY via env nem args, deve ser desconectado."""
+    old_url = os.environ.get("SUPABASE_URL", "")
+    old_key = os.environ.get("SUPABASE_KEY", "")
+    if old_url:
+        del os.environ["SUPABASE_URL"]
+    if old_key:
+        del os.environ["SUPABASE_KEY"]
     c = SupabaseClient("", "")
     assert not c.connected
+    if old_url:
+        os.environ["SUPABASE_URL"] = old_url
+    if old_key:
+        os.environ["SUPABASE_KEY"] = old_key
 
 
 def test_client_env_vars():
