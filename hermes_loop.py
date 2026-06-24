@@ -15,6 +15,7 @@ from core import HermesHarness
 from engine import CheckpointManager, HookManager, salvar_progresso
 from healer import AutoHealer
 from intelligence import ProjectScanner
+from delegator import delegator
 from logger_pro import setup_hermes_logging
 from telemetry import telemetry
 from logger import get_logger
@@ -105,15 +106,16 @@ class HermesLoop:
                 action = self.harness.choose_action(user_input)
                 result = self.harness.execute_action(action, user_input)
                 
-                # TELEMETRIA OBRIGATORIA — toda interacao
+                # TELEMETRIA + DELEGACAO OBRIGATORIA — toda interacao
                 shell_name = getattr(action, 'name', '') if hasattr(action, 'name') else str(action)[:20]
+                dec = delegator.delegar(user_input, funcao=shell_name)
                 telemetry.record(
                     user_input=user_input,
                     action_taken=shell_name,
-                    shell_used=shell_name,
-                    model_used=getattr(action, 'modelo', ''),
-                    provider=getattr(action, 'provider', ''),
-                    complexity=len(user_input) // 50 + 1,
+                    shell_used=dec.shell,
+                    model_used=dec.model,
+                    provider=dec.provider,
+                    complexity=dec.complexity,
                 )
                 # 5. Auto-heal if failed
                 if hasattr(result, 'success') and not result.success:
