@@ -226,30 +226,36 @@ class Telemetry:
         return entries
     
     def mini_report(self) -> str:
-        """Mini-telemetria com breakdown por shell (S1_local, S2_cheap, S3_premium).
-        Mostra: tokens, custo por shell, total.
+        """Mini-telemetria com breakdown por shell (S3 main, S1 worker).
+        Exibir ao final de CADA resposta. NUNCA omitir.
         """
-        entries = self.get_all_entries(limit=100)
+        entries = self.get_all_entries(limit=200)
         
-        # Agrupa por shell
+        # Agrupa por shell (normaliza nomes)
+        shell_map = {
+            "S3": "S3 DeepSeek", "S3_premium": "S3 DeepSeek",
+            "S2_cheap": "S3 DeepSeek", "S1_nuvem": "S3 DeepSeek",
+            "S1": "S1 Ollama", "S1_local": "S1 Ollama",
+            "desconhecido": "S3 DeepSeek",
+        }
         shell_stats: dict = {}
         total_tokens = 0
         total_cost = 0.0
         
         for e in entries:
-            shell = e.get("shell_used", "desconhecido")
+            raw_shell = e.get("shell_used", "")
+            shell = shell_map.get(raw_shell, raw_shell or "S3 DeepSeek")
             tok = e.get("total_tokens", 0)
             cst = e.get("cost", 0.0)
-            prov = e.get("provider", "")
             
             if shell not in shell_stats:
-                shell_stats[shell] = {"tokens": 0, "cost": 0.0, "provider": prov}
+                shell_stats[shell] = {"tokens": 0, "cost": 0.0}
             shell_stats[shell]["tokens"] += tok
             shell_stats[shell]["cost"] += cst
             total_tokens += tok
             total_cost += cst
         
-        # Ordena shells por custo (maior primeiro)
+        # Ordena
         sorted_shells = sorted(shell_stats.items(), key=lambda x: x[1]["cost"], reverse=True)
         
         lines = [
@@ -257,19 +263,17 @@ class Telemetry:
         ]
         
         for shell, stats in sorted_shells:
-            # Icone baseado no tier
-            tier = get_tier(shell)
-            icon = "O" if tier == "local" else "$"
+            icon = "O" if "S1" in shell or "Ollama" in shell or "local" in shell.lower() else "$"
             label = f"{icon} {shell}"
             tok_str = f"{stats['tokens']:>6}" if stats['tokens'] else "     0"
             cost_str = f"${stats['cost']:.4f}"
-            lines.append(f"  {label:<17} {tok_str}  {cost_str}")
+            lines.append(f"  {label:<20} {tok_str}  {cost_str}")
         
-        if not shell_stats:
-            lines.append("  (nenhuma atividade registrada)")
+        if not shell_stats or total_tokens == 0:
+            lines.append("  (nenhuma atividade registrada nesta sessao)")
         
-        lines.append(f"  {'─'*35}")
-        lines.append(f"  {'TOTAL':<17} {total_tokens:>6}  ${total_cost:.4f}")
+        lines.append(f"  {'─'*38}")
+        lines.append(f"  {'TOTAL':<20} {total_tokens:>6}  ${total_cost:.4f}")
         
         return "\\n".join(lines)
 
