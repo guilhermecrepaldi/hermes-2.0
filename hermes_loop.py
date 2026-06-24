@@ -15,7 +15,7 @@ from core import HermesHarness
 from engine import CheckpointManager, HookManager, salvar_progresso
 from healer import AutoHealer
 from intelligence import ProjectScanner
-from delegator import delegator
+from shellz import shellz
 from logger_pro import setup_hermes_logging
 from telemetry import telemetry
 from logger import get_logger
@@ -106,16 +106,18 @@ class HermesLoop:
                 action = self.harness.choose_action(user_input)
                 result = self.harness.execute_action(action, user_input)
                 
-                # TELEMETRIA + DELEGACAO OBRIGATORIA — toda interacao
-                shell_name = getattr(action, 'name', '') if hasattr(action, 'name') else str(action)[:20]
-                dec = delegator.delegar(user_input, funcao=shell_name)
+                # ═══════════════════════════════════════════════
+                # SHELLZ — ROTEAMENTO OBRIGATORIO E ETERNO
+                # S3 (DeepSeek) = main. S1 (Ollama) = worker.
+                # Toda interacao. NUNCA desligar.
+                # ═══════════════════════════════════════════════
+                dec = shellz.rotear(user_input, funcao="main")
                 telemetry.record(
                     user_input=user_input,
-                    action_taken=shell_name,
+                    action_taken=dec.shell,
                     shell_used=dec.shell,
                     model_used=dec.model,
                     provider=dec.provider,
-                    complexity=dec.complexity,
                 )
                 # 5. Auto-heal if failed
                 if hasattr(result, 'success') and not result.success:
