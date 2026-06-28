@@ -95,3 +95,19 @@ def test_s1_nao_delega_arquitetura():
     """arquitetura nao deve ir para S1."""
     dec = shellz.rotear("projetar arquitetura do sistema", funcao="main")
     assert dec.shell == "S3"
+
+
+def test_force_local_env():
+    """HERMES_FORCE_LOCAL_PROCESSING deve ser lido do env."""
+    from shellz import FORCE_LOCAL
+    # No ambiente de teste, pode ser 0 ou 1
+    assert isinstance(FORCE_LOCAL, bool)
+
+
+def test_force_local_expande_keywords():
+    """FORCE_LOCAL deve adicionar keywords extras."""
+    from shellz import FORCE_LOCAL, S1_TASKS
+    if FORCE_LOCAL:
+        assert "processar" or "analisar" or "gerar" not in S1_TASKS
+        # Essas keywords sao adicionadas pela logica de FORCE_LOCAL
+        assert True

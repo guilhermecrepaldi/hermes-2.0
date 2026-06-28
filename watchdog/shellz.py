@@ -15,6 +15,10 @@ import os
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
+# ─── ENV OBRIGATORIA — IA local SEMPRE que possivel
+FORCE_LOCAL = os.environ.get("HERMES_FORCE_LOCAL_PROCESSING", "0") == "1"
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:7b")
+
 # ─── IMPORTS OBRIGATORIOS — NUNCA falham ────────
 
 HAS_TELEMETRY = False
@@ -114,9 +118,26 @@ class Shellz:
         """
         lower = user_input.lower()
         
+        # FORCE LOCAL PROCESSING: se HERMES_FORCE_LOCAL_PROCESSING=1,
+        # toda tarefa com processamento vai para S1 (Ollama)
+        if FORCE_LOCAL:
+            # Qualquer tarefa que envolva processamento ativo
+            process_keywords = S1_TASKS | {
+                "processar", "process", "analisar", "analyze",
+                "extrair", "extract", "converter", "transform",
+                "gerar", "generate", "criar", "create",
+                "compilar", "build", "executar", "run",
+                "testar", "test", "validar", "validate",
+                "baixar", "download", "importar", "import",
+                "formatar", "format", "limpar", "clean",
+                "calcular", "calculate", "simular", "simulate",
+            }
+        else:
+            process_keywords = S1_TASKS
+        
         # Decide se vai para S1
-        vai_s1 = False
-        for kw in S1_TASKS:
+        vai_s1 = FORCE_LOCAL  # Se FORCE_LOCAL, prefere S1
+        for kw in process_keywords:
             if kw in lower:
                 vai_s1 = True
                 break
