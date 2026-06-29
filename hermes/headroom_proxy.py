@@ -102,30 +102,10 @@ class HeadroomProxyHandler(BaseHTTPRequestHandler):
                 tok_est_before = max(chars_before // 4, 1)
                 self._debug(f"Compression: {len(msgs)} msgs, {chars_before} chars")
 
-                # Estrategia 1: resumir tool outputs via Ollama
+                # Estrategia: comprimir tool outputs com SmartCrusher (Rust+torch)
                 compressed = None
                 if HAS_RUST_CORE:
-                    self._debug("Trying Ollama summarization...")
-                    compressed = self._safe_dedup(msgs)
-                    self._debug(f"Ollama result: {type(compressed).__name__}")
-
-                # Estrategia 2: fallback headroom.compress()
-                if compressed is None and HAS_HEADROOM:
-                    self._debug("Trying headroom.compress()...")
-                    try:
-                        result = compress(msgs)
-                        compressed = (
-                            getattr(result, "messages", None)
-                            or getattr(result, "compressed_messages", None)
-                        )
-                        if compressed and len(compressed) == len(msgs):
-                            ok = any(a != b for a, b in zip(msgs, compressed))
-                            if not ok:
-                                compressed = None
-                        self._debug(f"headroom.compress result: {type(compressed).__name__ if compressed else 'None'}")
-                    except Exception as e:
-                        self._debug(f"headroom.compress error: {e}")
-                        pass
+                    compressed = self._compress_tool_outputs(msgs)
 
                 if compressed:
                     data["messages"] = compressed
@@ -164,12 +144,13 @@ class HeadroomProxyHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self._json(502, {"error": str(e)})
 
-    # ── Compressao segura ───────────────────────
+    # ── Compressao com torch + Rust ─────────────
 
-    def _safe_dedup(self, msgs):
-        """Remove tool outputs duplicados consecutivos.
-        Retorna lista otimizada ou None."""
+    def _compress_tool_outputs(self, msgs):
+        """Comprime tool outputs JSON com SmartCrusher (Rust+torch).
+        Retorna lista comprimida ou None."""
         try:
+            sc = _core.SmartCrusher()
             changed = False
             new_msgs = []
             last_tool = None
@@ -177,10 +158,23 @@ class HeadroomProxyHandler(BaseHTTPRequestHandler):
                 if not isinstance(m, dict):
                     new_msgs.append(m); continue
                 role, content = m.get("role"), m.get("content","")
+                # Dedup
                 if role == "tool" and content and content == last_tool:
                     changed = True; continue
                 if role == "tool" and content:
                     last_tool = content
+                    # Comprimir tool outputs grandes (>1000 chars)
+                    if len(content) > 1000:
+                        try:
+                            cr = sc.crush(content)
+                            if cr.was_modified and len(cr.compressed) < len(content):
+                                new_m = dict(m)
+                                new_m["content"] = cr.compressed
+                                new_msgs.append(new_m)
+                                changed = True
+                                continue
+                        except Exception:
+                            pass
                 new_msgs.append(m)
             return new_msgs if changed else None
         except Exception:
