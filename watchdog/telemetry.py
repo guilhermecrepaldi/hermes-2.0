@@ -226,10 +226,11 @@ class Telemetry:
         return entries
     
     def mini_report(self) -> str:
-        """Mini-telemetria: S1 tokens (economia vs S3) + S3 tokens/custo.
+        """Mini-telemetria: apenas dados da sessao ATUAL.
         Exibir ao final de CADA resposta. NUNCA omitir.
         """
-        entries = self.get_all_entries(limit=200)
+        # Usar APENAS entradas da sessao atual
+        entries = self.get_session_entries()
         
         s1_tokens = 0
         s3_tokens = 0
@@ -240,16 +241,13 @@ class Telemetry:
             tok = e.get("total_tokens", 0)
             cst = e.get("cost", 0.0)
             
-            # S1 = Ollama/local/gratis
             if raw in ("S1", "S1_local") or "ollama" in e.get("provider", "").lower():
                 s1_tokens += tok
-            # S3 = DeepSeek/cloud/pago
             else:
                 s3_tokens += tok
                 s3_cost += cst
         
-        # Economia: o que S1 teria custado se fosse S3 ($0.30/M medio)
-        S3_RATE_PER_TOKEN = 0.30 / 1_000_000
+        S3_RATE_PER_TOKEN=0.30 / 1_000_000
         s1_economia = s1_tokens * S3_RATE_PER_TOKEN
         
         lines = ["── telemetria ───────────────"]
@@ -260,7 +258,11 @@ class Telemetry:
             lines.append(f"  S3 deep:   {s3_tokens} tok = ${s3_cost:.4f}")
         
         if s1_tokens == 0 and s3_tokens == 0:
-            lines.append("  (nenhuma atividade registrada)")
+            lines.append("  (nenhuma atividade registrada nesta sessao)")
+        else:
+            total_cost = s3_cost
+            lines.append(f"  ─────────────────────────")
+            lines.append(f"  Total: {s1_tokens + s3_tokens} tok = ${total_cost:.4f}")
         
         return "\\n".join(lines)
 
