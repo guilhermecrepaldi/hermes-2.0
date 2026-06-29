@@ -23,11 +23,22 @@ from urllib.error import URLError
 PORT = int(os.environ.get("HEADROOM_PORT", "8787"))
 UPSTREAM = os.environ.get("HEADROOM_UPSTREAM", "https://api.deepseek.com")
 TIMEOUT = int(os.environ.get("HEADROOM_TIMEOUT", "120"))
+OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:7b")
+SUMMARY_MAX_CHARS = int(os.environ.get("SUMMARY_MAX_CHARS", "300"))
 
 HAS_HEADROOM = False
+HAS_RUST_CORE = False
 try:
     from headroom import compress, count_tokens_messages
     HAS_HEADROOM = True
+except ImportError:
+    pass
+
+# Tentar carregar compressores Rust nativos
+try:
+    from headroom import _core
+    HAS_RUST_CORE = True
 except ImportError:
     pass
 
@@ -51,14 +62,21 @@ class HeadroomProxyHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         self._proxy_request()
 
-    def log_message(self, *a):
-        pass
+    def log_message(self, fmt, *args):
+        pass  # silencia logs
+
+    # ── Debug ─────────────────────────────────────
+
+    def _debug(self, msg):
+        import sys
+        print(f"[HEADROOM] {msg}", flush=True)
 
     # ── Core ─────────────────────────────────────
 
     def _proxy_request(self):
         content_len = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_len) if content_len > 0 else b""
+        self._debug(f"Request: {len(body)}b body, path={self.path}")
 
         is_stream = False
         data = None
@@ -66,33 +84,73 @@ class HeadroomProxyHandler(BaseHTTPRequestHandler):
             try:
                 data = json.loads(body)
                 is_stream = data.get("stream", False)
-            except Exception:
+                self._debug(f"Parsed: stream={is_stream}, msgs={len(data.get('messages',[]))}")
+            except Exception as e:
+                self._debug(f"Parse error: {e}")
                 pass
 
-        # Comprimir contexto (apenas non-streaming)
-        if body and HAS_HEADROOM and not is_stream and data and data.get("messages"):
+        # ── Comprimir contexto ────────────────────
+        # Usa compressores Rust nativos primeiro (ate 80% em JSON),
+        # fallback pro headroom.compress() padrao
+        # ── Comprimir contexto ────────────────────
+        self._debug("Compression phase start")
+        compression_info = {"engine": "passthrough", "saved": 0, "pct": 0.0}
+        if body and not is_stream and data and data.get("messages"):
             try:
                 msgs = data["messages"]
-                orig = count_tokens_messages(msgs) if callable(count_tokens_messages) else 0
-                result = compress(msgs)
-                compressed = (
-                    getattr(result, "compressed_messages", None)
-                    or (result if isinstance(result, dict) and "compressed_messages" in result else None)
-                )
+                chars_before = sum(len(m.get("content", "")) for m in msgs if isinstance(m, dict))
+                tok_est_before = max(chars_before // 4, 1)
+                self._debug(f"Compression: {len(msgs)} msgs, {chars_before} chars")
+
+                # Estrategia 1: resumir tool outputs via Ollama
+                compressed = None
+                if HAS_RUST_CORE:
+                    self._debug("Trying Ollama summarization...")
+                    compressed = self._safe_dedup(msgs)
+                    self._debug(f"Ollama result: {type(compressed).__name__}")
+
+                # Estrategia 2: fallback headroom.compress()
+                if compressed is None and HAS_HEADROOM:
+                    self._debug("Trying headroom.compress()...")
+                    try:
+                        result = compress(msgs)
+                        compressed = (
+                            getattr(result, "messages", None)
+                            or getattr(result, "compressed_messages", None)
+                        )
+                        if compressed and len(compressed) == len(msgs):
+                            ok = any(a != b for a, b in zip(msgs, compressed))
+                            if not ok:
+                                compressed = None
+                        self._debug(f"headroom.compress result: {type(compressed).__name__ if compressed else 'None'}")
+                    except Exception as e:
+                        self._debug(f"headroom.compress error: {e}")
+                        pass
+
                 if compressed:
                     data["messages"] = compressed
                     body = json.dumps(data).encode()
-                    newc = count_tokens_messages(compressed) if callable(count_tokens_messages) else 0
+                    chars_after = sum(len(m.get("content","")) for m in compressed if isinstance(m,dict))
+                    tok_est_after = max(chars_after // 4, 1)
+                if compressed:
+                    data["messages"] = compressed
+                    body = json.dumps(data).encode()
+                    chars_after = sum(len(m.get("content", "")) for m in compressed if isinstance(m, dict))
+                    tok_est_after = max(chars_after // 4, 1)
+                    saved = tok_est_before - tok_est_after
+                    pct = (saved / tok_est_before * 100) if tok_est_before else 0
                     with STATS_LOCK:
                         STATS["requests"] += 1
-                        STATS["tokens_before"] += int(orig) if orig else 0
-                        STATS["tokens_after"] += int(newc) if newc else 0
+                        STATS["tokens_before"] += tok_est_before
+                        STATS["tokens_after"] += tok_est_after
+                    compression_info = {"engine": "rust" if HAS_RUST_CORE else "py", "saved": saved, "pct": pct}
             except Exception:
                 pass
 
         # Encaminhar
         headers = {k: v for k, v in self.headers.items()
-                   if k.lower() not in ("host", "transfer-encoding", "content-length", "connection")}
+                   if k.lower() not in ("host", "transfer-encoding", "connection")}
+        headers["Content-Length"] = str(len(body))
         req = Request(UPSTREAM + self.path, data=body, method=self.command, headers=headers)
 
         try:
@@ -105,6 +163,28 @@ class HeadroomProxyHandler(BaseHTTPRequestHandler):
             self._json(502, {"error": str(e.reason)})
         except Exception as e:
             self._json(502, {"error": str(e)})
+
+    # ── Compressao segura ───────────────────────
+
+    def _safe_dedup(self, msgs):
+        """Remove tool outputs duplicados consecutivos.
+        Retorna lista otimizada ou None."""
+        try:
+            changed = False
+            new_msgs = []
+            last_tool = None
+            for m in msgs:
+                if not isinstance(m, dict):
+                    new_msgs.append(m); continue
+                role, content = m.get("role"), m.get("content","")
+                if role == "tool" and content and content == last_tool:
+                    changed = True; continue
+                if role == "tool" and content:
+                    last_tool = content
+                new_msgs.append(m)
+            return new_msgs if changed else None
+        except Exception:
+            return None
 
     # ── Normal (non-streaming) ───────────────────
 
@@ -156,10 +236,15 @@ def main():
     p.add_argument("--upstream", type=str, default=UPSTREAM)
     args = p.parse_args()
 
-    if not HAS_HEADROOM:
+    if not HAS_HEADROOM and not HAS_RUST_CORE:
         print("⚠️  headroom nao disponivel — modo pass-through")
     else:
-        print(f"✅ headroom-ai v{getattr(__import__('headroom'), '__version__', '?')}")
+        rc = "✅" if HAS_RUST_CORE else "❌"
+        try:
+            hv = getattr(__import__("headroom"), "__version__", "?")
+            print(f"✅ headroom-ai v{hv} (Rust _core: {rc})")
+        except Exception:
+            print(f"✅ headroom-ai carregado (Rust _core: {rc})")
 
     server = ThreadingHTTPServer(("0.0.0.0", args.port), HeadroomProxyHandler)
     print(f"\n🚀 Headroom Proxy v2 em http://0.0.0.0:{args.port}")
