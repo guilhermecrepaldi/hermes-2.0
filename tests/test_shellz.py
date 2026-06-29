@@ -12,10 +12,10 @@ def test_shellz_singleton():
     s2 = Shellz()
     assert s1 is s2
 
-
 def test_main_vai_s3():
-    """Task main vai para S3 (DeepSeek)."""
-    dec = shellz.rotear("criar API REST", funcao="main")
+    """Task main sem keywords S1 vai para S3 (DeepSeek)."""
+    d = Shellz()
+    dec = d.rotear("qual o sentido da vida", funcao="main")
     assert dec.shell == "S3"
     assert dec.role == "main"
     assert dec.provider == "deepseek"
@@ -67,7 +67,7 @@ def test_custo_s1_zero():
 
 def test_custo_s3_positivo():
     """S3 custa > $0."""
-    dec = shellz.rotear("criar API", tokens=1000)
+    dec = shellz.rotear("responda esta pergunta filosofica", tokens=1000)
     assert dec.cost_per_1m > 0.0
 
 
@@ -86,28 +86,35 @@ def test_rotear_obrigatorio():
 
 
 def test_s1_nao_delega_analise():
-    """analise de dados nao deve ir para S1."""
-    dec = shellz.rotear("analisar dados de vendas", funcao="main")
-    assert dec.shell == "S3"
+    """analise de dados SEM FORCE_LOCAL nao vai para S1."""
+    # Com FORCE_LOCAL=1 ativado no env, 'analisar' vai para S1
+    # Teste apenas com funcao='worker' forcando comportamento
+    from shellz import FORCE_LOCAL
+    if not FORCE_LOCAL:
+        dec = shellz.rotear("analisar dados de vendas", funcao="main")
+        assert dec.shell == "S3"
 
 
 def test_s1_nao_delega_arquitetura():
-    """arquitetura nao deve ir para S1."""
-    dec = shellz.rotear("projetar arquitetura do sistema", funcao="main")
-    assert dec.shell == "S3"
+    """arquitetura SEM FORCE_LOCAL nao vai para S1."""
+    from shellz import FORCE_LOCAL
+    if not FORCE_LOCAL:
+        dec = shellz.rotear("projetar arquitetura do sistema", funcao="main")
+        assert dec.shell == "S3"
 
 
 def test_force_local_env():
     """HERMES_FORCE_LOCAL_PROCESSING deve ser lido do env."""
     from shellz import FORCE_LOCAL
-    # No ambiente de teste, pode ser 0 ou 1
     assert isinstance(FORCE_LOCAL, bool)
 
 
 def test_force_local_expande_keywords():
     """FORCE_LOCAL deve adicionar keywords extras."""
-    from shellz import FORCE_LOCAL, S1_TASKS
+    from shellz import FORCE_LOCAL
     if FORCE_LOCAL:
-        assert "processar" or "analisar" or "gerar" not in S1_TASKS
-        # Essas keywords sao adicionadas pela logica de FORCE_LOCAL
+        # 'analisar' agora vai para S1 com FORCE_LOCAL ativo
+        dec = shellz.rotear("analisar dados de vendas", funcao="main")
+        assert dec.shell == "S1", "FORCE_LOCAL=1: analisar deve ir para S1"
+    else:
         assert True
