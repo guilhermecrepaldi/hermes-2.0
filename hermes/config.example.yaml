@@ -23,7 +23,7 @@ agent:
   gateway_auto_continue_freshness: 3600
   image_input_mode: auto
   disabled_toolsets: []
-  autoload_skills: output-coeso,roteador-economico,telemetria,shellz-environment,auto-healing,repo-cloner,auto-implementer,complex-reasoner,assertive-executor,skill-router
+  autoload_skills: caveman-hermes,output-coeso,roteador-economico,telemetria,shellz-environment,auto-healing,repo-cloner,auto-implementer,complex-reasoner,assertive-executor,skill-router
   personalities:
     catgirl: You are Neko-chan, an anime catgirl AI assistant, nya~! Add 'nya' and
       cat-like expressions to your speech. Use kaomoji like (=^ï½¥Ï‰ï½¥^=) and à¸…^â€¢ï»Œâ€¢^à¸….
