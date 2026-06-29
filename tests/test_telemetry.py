@@ -145,12 +145,21 @@ def test_mini_report_produces_text():
 
 
 def test_estimate_cost_deepseek():
-    """estimate_cost deve calcular DeepSeek corretamente."""
+    """estimate_cost deve calcular DeepSeek corretamente (1M tok = $1)."""
     from telemetry import estimate_cost
-    # 200 tokens input ($0.14/M) + 300 output ($0.42/M)
+    # 200 tokens input ($0.40/M) + 300 output ($0.60/M)
     cost = estimate_cost("deepseek", 200, 300)
-    expected = (200 * 0.14 + 300 * 0.42) / 1_000_000
+    expected = (200 * 0.40 + 300 * 0.60) / 1_000_000
     assert abs(cost - expected) < 0.000001
+
+
+def test_estimate_cost_one_million():
+    """1 milhao de tokens deve custar ~$1.00."""
+    from telemetry import estimate_cost
+    cost = estimate_cost("deepseek", 500000, 500000)
+    expected = (500000 * 0.40 + 500000 * 0.60) / 1_000_000
+    assert abs(cost - expected) < 0.01
+    assert 0.40 < cost < 0.60  # Entre $0.40 e $0.60 para 500k+500k tok
 
 
 def test_estimate_cost_zero_local():

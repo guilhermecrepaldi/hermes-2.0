@@ -23,8 +23,8 @@ TELEMETRY_FILE = TELEMETRY_DIR / "telemetry.jsonl"
 PROVIDER_RATES = {
     "ollama":      {"input": 0.0, "output": 0.0, "name": "Local"},
     "llama.cpp":   {"input": 0.0, "output": 0.0, "name": "Local"},
-    "deepseek":    {"input": 0.14, "output": 0.42, "name": "DeepSeek"},
-    "openrouter":  {"input": 0.15, "output": 0.60, "name": "OpenRouter"},
+    "deepseek":    {"input": 0.40, "output": 0.60, "name": "DeepSeek"},
+    "openrouter":  {"input": 0.40, "output": 0.60, "name": "OpenRouter"},
     "gemini":      {"input": 0.10, "output": 0.40, "name": "Gemini"},
     "nvidia":      {"input": 0.20, "output": 0.80, "name": "NVIDIA"},
     "openai":      {"input": 2.50, "output": 10.00, "name": "OpenAI"},
@@ -45,7 +45,7 @@ SHELL_TIERS = {
 
 def estimate_cost(provider: str, tokens_input: int, tokens_output: int) -> float:
     """Estima custo em USD baseado na tabela de precos."""
-    rates = PROVIDER_RATES.get(provider.lower(), {"input": 0.15, "output": 0.60})
+    rates = PROVIDER_RATES.get(provider.lower(), {"input": 0.50, "output": 0.50, "name": provider})
     cost = (tokens_input * rates["input"] + tokens_output * rates["output"]) / 1_000_000
     return round(cost, 6)
 
@@ -247,8 +247,8 @@ class Telemetry:
                 s3_tokens += tok
                 s3_cost += cst
         
-        S3_RATE_PER_TOKEN=0.30 / 1_000_000
-        s1_economia = s1_tokens * S3_RATE_PER_TOKEN
+        # Economia: o que S1 teria custado se fosse S3 ($1.00/M medio)
+        s1_economia = estimate_cost("deepseek", s1_tokens, 0)
         
         lines = ["── telemetria ───────────────"]
         
