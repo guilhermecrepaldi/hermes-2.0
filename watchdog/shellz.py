@@ -23,7 +23,7 @@ OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:7b")
 
 HAS_TELEMETRY = False
 HAS_LOGGER = False
-HAS_HEADROOM = False
+HAS_COMPRESSOR = False
 
 try:
     from telemetry import telemetry, estimate_cost
@@ -32,8 +32,8 @@ except ImportError:
     pass
 
 try:
-    from headroom_bridge import compress_messages, doctor as headroom_doctor
-    HAS_HEADROOM = True
+    from ollama_compress import compress_messages, compress_text, doctor
+    HAS_COMPRESSOR = True
 except ImportError:
     pass
 
@@ -192,9 +192,9 @@ class Shellz:
                 cost=cost,
             )
         
-        # HEADROOM: se for S3, comprime contexto automaticamente
-        if decision.shell == "S3" and HAS_HEADROOM and tokens > 500:
-            logger.info("headroom disponivel: comprimir contexto antes de S3")
+        # COMPRESSAO OLLAMA: se for S3, comprime contexto automaticamente
+        if decision.shell == "S3" and HAS_COMPRESSOR and tokens > 500:
+            logger.info("ollama_compress: comprimir contexto antes de S3")
         
         return decision
     
@@ -208,35 +208,36 @@ class Shellz:
             "cost_s3": self._cost_s3,
             "cost_s1": self._cost_s1,
             "total_cost": self._cost_s3 + self._cost_s1,
-            "headroom": HAS_HEADROOM,
+            "compressor": HAS_COMPRESSOR,
         }
     
     def comprimir_contexto(self, messages: list) -> dict:
-        """Comprime contexto automaticamente com headroom.ai.
+            """Comprime contexto automaticamente com Ollama local.
         
-        Chamar ANTES de enviar para S3 (DeepSeek).
-        Se headroom nao estiver instalado, retorna original.
+            Chamar ANTES de enviar para S3 (DeepSeek).
+            Usa qwen2.5-coder:7b como motor de compressao real.
+            Se Ollama nao estiver disponivel, retorna original.
         
-        Args:
-            messages: Lista de mensagens no formato LLM
+            Args:
+                messages: Lista de mensagens no formato LLM
         
-        Returns:
-            Dict com messages comprimidas + metricas
-        """
-        if not HAS_HEADROOM:
-            return {"messages": messages, "tokens_saved": 0}
+            Returns:
+                Dict com messages comprimidas + metricas
+            """
+            if not HAS_COMPRESSOR:
+                return {"messages": messages, "tokens_saved": 0}
         
-        try:
-            result = compress_messages(messages)
-            if result.get("tokens_saved", 0) > 0:
-                logger.info(
-                    f"headroom: {result['tokens_saved']} tok economizados "
-                    f"({result.get('compression_ratio', 0)*100:.0f}%)"
-                )
-            return result
-        except Exception as e:
-            logger.warning(f"headroom compress falhou: {e}")
-            return {"messages": messages, "tokens_saved": 0}
+            try:
+                result = compress_messages(messages)
+                if result.get("tokens_saved", 0) > 0:
+                    logger.info(
+                        f"ollama_compress: {result['tokens_saved']} tok economizados "
+                        f"({result.get('compression_ratio', 0)*100:.0f}%)"
+                    )
+                return result
+            except Exception as e:
+                logger.warning(f"ollama compress falhou: {e}")
+                return {"messages": messages, "tokens_saved": 0}
 
 
 # ════════════════════════════════════════════════════════

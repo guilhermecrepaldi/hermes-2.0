@@ -43,9 +43,6 @@ model:
 shellz:
   enabled: true
   force_local: true
-  auto_start_proxy: true
-  proxy_port: 8787
-  proxy_upstream: https://api.deepseek.com
 
 # ─── TELEMETRIA ─────────────────────────────────
 telemetry:
@@ -54,12 +51,11 @@ telemetry:
   rate_per_1m: 1.00  # 1M tok = $1 USD
   show_economy: true
 
-# ─── HEADROOM ───────────────────────────────────
-headroom:
-  enabled: true
-  fallback: ollama
-  compress_threshold: 500  # tok
-  max_context: 6000  # chars
+# ─── COMPRESSAO ─────────────────────────────────
+compress:
+  engine: ollama  # Usa qwen2.5-coder:7b para comprimir contexto
+  compress_threshold: 2000  # chars - so comprime acima disso
+  model: qwen2.5-coder:7b
 
 # ─── SKILLS ─────────────────────────────────────
 skills:
@@ -75,6 +71,7 @@ skills:
     - spec-agent
     - taste-skill
     - design-system-references
+    - caveman-hermes
     - last30days
     - cybersec-code-review
 
@@ -98,6 +95,4 @@ env:
   OLLAMA_BASE_URL: http://localhost:11434
   OLLAMA_MODEL: qwen2.5-coder:7b
   HERMES_FORCE_LOCAL_PROCESSING: 1
-  HEADROOM_PORT: 8787
-  HEADROOM_UPSTREAM: https://api.deepseek.com
   LAST30DAYS_DIR: C:\Users\Home\last30days-skill

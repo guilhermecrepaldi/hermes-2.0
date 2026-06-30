@@ -5,7 +5,6 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue)
 ![DeepSeek](https://img.shields.io/badge/LLM-DeepSeek%20V4%20Flash-red)
 ![Ollama](https://img.shields.io/badge/Local-Ollama-green)
-![Headroom](https://img.shields.io/badge/Context-Headroom.ai-purple)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 > **Orquestrador inteligente que roda agentes de IA (cloud + local), watchdog de auto-recuperação, roteamento econômico de tarefas e pipeline automatizado de research.**  
@@ -19,11 +18,12 @@
 ┌─────────────────────────────────────────────────────┐
 │                    NEO HERMES                        │
 ├─────────────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐  ┌──────────────────┐   │
-│  │   S1     │  │   S3     │  │   Hermes Queen    │   │
-│  │  Router  │  │ Headroom │  │   (Orchestrator)  │   │
-│  │(Ollama)  │  │(DeepSeek)│  │   (Cascading)    │   │
-│  │  $0/task │  │$0.015/M  │  │                  │   │
+|  │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐   │
+|  │  │   S1     │  │   S3     │  │   Hermes Queen    │   │
+|  │  │  Mão de  │  │  Cérebro │  │   (Orchestrator)  │   │
+|  │  │  Obra    │  │  Principal│  │                   │   │
+|  │  │(Ollama)  │  │(DeepSeek)│  │                   │   │
+|  │  │  $0/task │  │$0.015/M  │  │                   │   │
 │  └────┬─────┘  └────┬─────┘  └────────┬─────────┘   │
 │       │              │                │              │
 │  ┌────▼──────────────▼────────────────▼──────────┐   │
@@ -45,7 +45,7 @@
 | Componente | Função | Motor | Custo |
 |-----------|--------|-------|-------|
 | **S1 Router** | Tarefas simples (validação, ajustes, verificação) | Ollama qwen2.5-coder | **Grátis** |
-| **S3 Headroom** | Tarefas complexas (orquestração, análise) | DeepSeek V4 Flash | ~$0.015/1M tokens |
+| **S3** | Tarefas complexas (orquestração, análise) | DeepSeek V4 Flash | ~$0.015/1M tokens |
 | **Hermes Queen** | Orquestrador em cascata de sub-agentes | DeepSeek V4 Flash | ~$0.015/1M tokens |
 | **Hermes Doctor** | Diagnóstico de saúde do sistema | Ollama | **Grátis** |
 
@@ -78,9 +78,9 @@
 | Componente | Tecnologia |
 |-----------|-----------|
 | **Core** | Python 3.11+ |
-| **LLM Cloud** | DeepSeek V4 Flash (via Headroom :8787) |
+| **LLM Cloud** | DeepSeek V4 Flash (direto, sem proxy) |
 | **LLM Local** | Ollama (qwen2.5-coder) |
-| **Context Compression** | Headroom.ai (cache + compressão) |
+| **Context Compression** | Ollama qwen2.5-coder (inline) |
 | **Shell** | Python, Bash, Batch |
 | **Monitoramento** | Watchdog + Logging estruturado |
 | **Cron** | Agendamento interno + Hooks |
@@ -95,26 +95,23 @@
 git clone https://github.com/guilhermecrepaldi/neo-hermes.git
 cd neo-hermes
 
-# 2. Instalar
-pip install -r requirements.txt
+# 2. Instalar dependencias
+pip install requests
 
-# 3. Configurar Headroom (recomendado)
-#   Editar: /watchdog/headroom_config.yaml
+# 3. Configurar Hermes
+#    Editar config.yaml com sua DEEPSEEK_API_KEY
 
-# 4. Iniciar
-python hermes_queen.py            # Orquestrador principal
-python watchdog/headroom.py       # Proxy Headroom (cache/localhost:8787)
+# 4. Garantir que Ollama esteja rodando
+ollama serve  # ou ja deve estar rodando
+ollama pull qwen2.5-coder:7b  # se ainda nao tiver
+
+# 5. Abrir Hermes
+hermes
 ```
 
-### Comandos Rápidos
+### Estrutura do Projeto
 
-```bash
-python hermes_queen.py          # Iniciar orquestrador
-python watchdog/s1_executor.py  # Executor de tarefas S1
-python hermes_doctor.py         # Diagnóstico do sistema
 ```
-
----
 
 ## 📁 Estrutura do Projeto
 
@@ -144,7 +141,6 @@ neo-hermes/
 |-------|----------------|------------------|
 | Ollama qwen2.5-coder | **Grátis** | Infinito |
 | DeepSeek V4 Flash (direto) | $0,15 | 6× mais barato |
-| DeepSeek via Headroom (cache) | ~$0,015 | **66× mais barato** |
 | **Régua base** | **$1,00** | — |
 
 ---

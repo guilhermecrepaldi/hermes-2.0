@@ -19,35 +19,6 @@ from shellz import shellz
 from logger_pro import setup_hermes_logging
 from telemetry import telemetry
 
-# ─── HEADROOM PROXY — Auto-start OBRIGATORIO ─────
-try:
-    from subprocess import Popen
-    import requests
-    
-    def _start_headroom_proxy():
-        """Inicia Headroom Proxy se nao estiver rodando."""
-        try:
-            r = requests.get("http://localhost:8787/health", timeout=2)
-            if r.status_code == 200:
-                return True
-        except:
-            pass
-        
-        try:
-            proxy_script = Path(__file__).resolve().parent / "watchdog" / "headroom_proxy.py"
-            if proxy_script.exists():
-                Popen(["python", str(proxy_script)],
-                      stdout=subprocess.DEVNULL,
-                      stderr=subprocess.DEVNULL)
-                logger.info("Headroom Proxy iniciado na porta 8787")
-                return True
-        except Exception as e:
-            logger.warning(f"Falha ao iniciar Headroom Proxy: {e}")
-        return False
-    
-    HEADROOM_ATIVO = _start_headroom_proxy()
-except ImportError:
-    HEADROOM_ATIVO = False
 from logger import get_logger
 from orchestrator import Orchestrator
 from proactive import ProactiveAnalyzer
