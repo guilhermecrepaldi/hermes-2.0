@@ -54,12 +54,10 @@ except ImportError:
 # ─── COMPRESSAO ──────────────────────────────────
 
 def compress_messages(messages: List[dict]) -> dict:
-    """Comprime mensagens usando headroom.ai OU Ollama local.
+    """Comprime mensagens usando Ollama local (S1, $0).
     
-    Prioridade:
-    1. headroom.ai com Rust core (compressao real)
-    2. Ollama local via API (fallback, $0)
-    3. Pass-through (se nada funcionar)
+    Headroom nativo removido — sem Rust core, nao comprime.
+    Usa Ollama (qwen2.5-coder:7b) como motor de compressao real.
     
     Args:
         messages: Lista de dicts com role/content
@@ -67,25 +65,7 @@ def compress_messages(messages: List[dict]) -> dict:
     Returns:
         Dict com mensagens comprimidas e metricas
     """
-    # Tenta headroom com Rust core primeiro
-    if HAS_HEADROOM:
-        try:
-            result = headroom_compress(messages)
-            tokens_saved = getattr(result, 'tokens_saved', 0)
-            if tokens_saved > 0:
-                return {
-                    "messages": getattr(result, 'messages', messages),
-                    "tokens_before": getattr(result, 'tokens_before', 0),
-                    "tokens_after": getattr(result, 'tokens_after', 0),
-                    "tokens_saved": tokens_saved,
-                    "compression_ratio": getattr(result, 'compression_ratio', 0),
-                    "transforms": getattr(result, 'transforms_applied', []),
-                    "engine": "headroom",
-                }
-        except Exception:
-            pass
-    
-    # Fallback: Ollama local para mensagens grandes
+    # Apenas Ollama — headroom nativo nao tem Rust core
     if HAS_OLLAMA and HAS_REQUESTS:
         total_chars = sum(len(m.get("content", "")) for m in messages)
         if total_chars > 2000:  # So comprime se for grande
@@ -163,12 +143,12 @@ def get_version() -> str:
 # ═══════════════════════════════════════════════════
 
 def doctor() -> dict:
-    """Verifica se headroom ou Ollama esta funcional."""
+    """Verifica se Ollama compressor esta funcional (headroom nativo removido)."""
     status = {
         "installed": HAS_HEADROOM,
         "version": HEADROOM_VERSION,
-        "ollama_fallback": HAS_OLLAMA,
-        "compress_engine": "ollama" if HAS_OLLAMA else ("headroom" if HAS_HEADROOM else "none"),
+        "ollama_compressor": HAS_OLLAMA,
+        "compress_engine": "ollama",
     }
     
     if HAS_HEADROOM:
