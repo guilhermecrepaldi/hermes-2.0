@@ -118,3 +118,84 @@ def test_force_local_expande_keywords():
         assert dec.shell == "S1", "FORCE_LOCAL=1: analisar deve ir para S1"
     else:
         assert True
+
+
+def test_stats_sem_headroom():
+    """get_stats NAO deve conter 'headroom'."""
+    stats = shellz.get_stats()
+    assert "headroom" not in stats, "headroom ainda nas stats!"
+    assert "compressor" in stats
+
+
+def test_stats_compressor_bool():
+    """compressor deve ser bool."""
+    stats = shellz.get_stats()
+    assert isinstance(stats["compressor"], bool)
+
+
+def test_rotear_com_tokens_calcula_custo():
+    """Tokens passados devem gerar custo em S3."""
+    dec = shellz.rotear("pergunta complexa sobre IA", tokens=10000)
+    if dec.shell == "S3":
+        assert dec.cost_per_1m > 0
+
+
+def test_git_push_detecta_s1():
+    """git push deve ir para S1."""
+    dec = shellz.rotear("git push origin feature-branch")
+    assert dec.shell == "S1"
+
+
+def test_download_detecta_s1():
+    """download/pip install deve ir para S1."""
+    dec = shellz.rotear("pip install fastapi")
+    assert dec.shell == "S1"
+
+
+def test_arquitetura_vai_s3():
+    """arquitetura do sistema deve ir para S3 (nao e S1)."""
+    from shellz import FORCE_LOCAL
+    if not FORCE_LOCAL:
+        dec = shellz.rotear("projetar arquitetura do sistema")
+        assert dec.shell == "S3"
+
+
+def test_pesquisa_vai_s3():
+    """pesquisa profunda deve ir para S3."""
+    from shellz import FORCE_LOCAL
+    if not FORCE_LOCAL:
+        dec = shellz.rotear("faca uma analise comparativa entre frameworks")
+        assert dec.shell == "S3"
+
+
+def test_comprimir_contexto_sem_compressor():
+    """comprimir_contexto sem compressor retorna original."""
+    from shellz import HAS_COMPRESSOR
+    if not HAS_COMPRESSOR:
+        msgs = [{"role": "user", "content": "teste"}]
+        result = shellz.comprimir_contexto(msgs)
+        assert result["tokens_saved"] == 0
+        assert result["messages"] == msgs
+
+
+def test_rotear_obrigatorio_s1():
+    """rotear_obrigatorio com task S1."""
+    d = rotear_obrigatorio("rodar pytest", funcao="main")
+    assert d.shell == "S1"
+
+
+def test_rotear_obrigatorio_s3():
+    """rotear_obrigatorio com task S3."""
+    d = rotear_obrigatorio("explique teoria da relatividade")
+    assert d.shell == "S3"
+
+
+def test_decision_todos_campos():
+    """ShellzDecision deve ter todos os campos."""
+    d = shellz.rotear("teste")
+    assert d.shell in ("S1", "S3")
+    assert d.role in ("main", "worker")
+    assert d.model
+    assert d.provider
+    assert isinstance(d.cost_per_1m, (int, float))
+    assert d.reason

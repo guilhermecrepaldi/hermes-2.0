@@ -24,6 +24,9 @@ ignore = ["E501", "E722", "E741", "N806"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
+markers = [
+    "network: tests that make real network requests (skip in CI)",
+]
 
 [tool.mypy]
 python_version = "3.10"
