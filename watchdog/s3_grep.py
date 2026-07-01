@@ -273,11 +273,10 @@ def search_grep(query: str, lang: str = None, repo: str = None,
 
 def s3_solution_search(problem: str, context: str = None) -> dict:
     """
-    Busca solucoes para um problema de codigo usando grep.app + s3_headroom.
+    Busca solucoes para um problema de codigo usando grep.app.
     Fluxo completo para o S3:
     1. Busca no grep.app por implementacoes de referencia
-    2. Escaneia projetos locais com s3_headroom.solution_search()
-    3. Compila resultado estruturado para decisao do S3
+    2. Compila resultado estruturado para decisao do S3
 
     Args:
         problem: Descricao do problema (ex: "fastapi JWT authentication middleware")

@@ -119,7 +119,7 @@ class RouterDecision:
 
 @dataclass
 class ProjectInfo:
-    """Informacoes de um projeto carregado via s3_headroom."""
+    """Informacoes de um projeto carregado via s3_grep."""
     path: str = ""
     name: str = ""
     status: str = "pending"

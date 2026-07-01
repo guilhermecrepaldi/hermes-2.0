@@ -17,7 +17,7 @@ timeline
     Fase 4 : Pipeline Workbench (F1-F5)
            : S3 Decide → S2 Arquitetura → S1 Executa → S3 Revisa → Report
     Fase 5 : Ferramentas S3
-           : Headroom + Grep + Router
+           : Grep + Router
     Fase 6 : DevToys + ExplainShell
            : 15 ferramentas dev
     Fase 7 : Executável .exe
@@ -101,7 +101,7 @@ Ticker ao vivo, radar de fontes, dark theme
 **Scanner automático** que detecta tecnologias nas notícias do jornal e cria skills Hermes automaticamente.
 
 **Skills geradas automaticamente:**
-- `headroom`, `vibevoice`, `agent-reach`, `mempalace`
+- `vibevoice`, `agent-reach`, `mempalace`
 - `opencv-5`, `apache-burr`, `cohere-coding-agent`
 - `harness-1`, `open-notebook`, `roboflow-supervision`
 - `diffusiongemma`, `taste-skill`, `openenv`
@@ -142,9 +142,7 @@ O Workbench Mode foi formalizado para NUNCA mais repetir esse loop cego.
 
 ## 🟣 FASE 5: Ferramentas S3
 
-### S3 Headroom (`s3_headroom.py`)
-
-**Context Optimization Layer** — inspirado no `headroom-ai` (23.1k ⭐, Vercel).
+### S3 Grep (`s3_grep.py`) — busca em 1M+ GitHub repos
 Python puro, zero Rust, roda no Windows.
 
 | Função | Descrição | Economia |
@@ -238,7 +236,6 @@ hermes-workbench.exe status               Status do sistema
 │  🧠 S3 (deepseek-pro)    ☁️ $0.50/M                         │
 │  ├── DECISION_PACKAGE (F1)                                  │
 │  ├── QUALITY GATE (F4) — Aprova/Rejeita + loop             │
-│  ├── HEADROOM: project_load, compress, search, map         │
 │  ├── GREP: busca em 1M+ GitHub repos                       │
 │  └── ROUTER: classifica tarefas S1/S2/S3                    │
 │                                                              │
@@ -314,7 +311,6 @@ Data       | Evento
 [11/06]    | ZERO JANELAS: pythonw + VBS guardian + caminho absoluto
 [11/06]    | Feedback: "janela continua aparecendo" (3x)
 [11/06]    | CRON REMOVIDO — causa raiz da janela piscante
-[11/06]    | S3 Headroom (project_load, compress, search, map)
 [11/06]    | S3 Grep (busca em 1M+ GitHub repos)
 [11/06]    | S1 Router (classificador S1/S2/S3)
 [11/06]    | Workbench Mode v1: F1-F4 (pipeline)
@@ -341,7 +337,7 @@ Data       | Evento
 ### Já temos:
 - ✅ Pipeline multi-shell (S3 → S2 → S1 → S3)
 - ✅ Quality Gate com loop automático
-- ✅ Ferramentas de contexto (Headroom, Grep)
+- ✅ Ferramentas de contexto (Grep)
 - ✅ Ferramentas de dev (Explain, DevToys, JTree)
 - ✅ Executável unificado (.exe)
 - ✅ Zero janelas, watchdog 24/7

@@ -14,7 +14,7 @@ requires-python = ">=3.10"
 [tool.ruff]
 target-version = "py310"
 line-length = 100
-extend-exclude = ["app/", "node_modules/", "docs/", "cli/", "watchdog/hermes_workbench.py", "watchdog/s3_headroom.py", "watchdog/s3_grep.py"]
+extend-exclude = ["app/", "node_modules/", "docs/", "cli/", "watchdog/hermes_workbench.py", "watchdog/s3_grep.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]

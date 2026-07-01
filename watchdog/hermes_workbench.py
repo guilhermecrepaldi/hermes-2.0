@@ -1139,8 +1139,7 @@ def cmd_browse(args):
     print("\nFluxo S3:")
     print(f"  1. browser_navigate('{url}')")
     print("  2. browser_snapshot()  — extrai conteudo")
-    print("  3. s3_headroom.compress() — comprime para tokens")
-    print("  4. Inclui no DECISION_PACKAGE")
+    print("  3. Inclui no DECISION_PACKAGE")
 
     # Try to extract using curl for simple pages
     import urllib.request
@@ -1156,12 +1155,6 @@ def cmd_browse(args):
             print(f"\n📋 Titulo: {title}")
             print(f"   Tamanho: {len(content)} bytes")
             print(f"   Status: {resp.status}")
-
-            from s3_headroom import context_compress
-            compressed = context_compress(content[:10000])
-            print("\n📦 Compressao:")
-            for line in compressed.split('\n')[:3]:
-                print(f"   {line}")
 
     except Exception as e:
         print(f"\n  ⚠️  Nao foi possivel extrair: {str(e)[:60]}")
@@ -1912,91 +1905,8 @@ def cmd_docs(args):
         print(f"  Caminho nao encontrado: {path}")
         return 1
 
-    from s3_headroom import project_load, project_map
-    info = project_load(path)
-
-    project_name = os.path.basename(path)
-    docs_dir = os.path.join(path, "docs")
-    os.makedirs(docs_dir, exist_ok=True)
-
-    print(f"📖 Gerando documentacao para: {project_name}")
-    print(f"   Destino: {docs_dir}/")
-    print()
-
-    # README.md
-    readme = f"""# {project_name}
-
-## Visao Geral
-{info.get('language', 'N/A')} project with {info['files']} files across {info['dirs']} directories.
-
-## Estrutura
-```
-"""
-
-    tree = project_map(path, max_depth=2)
-    for line in tree.split('\n')[:20]:
-        readme += f"{line}\n"
-    if len(tree.split('\n')) > 20:
-        readme += "...\n"
-
-    readme += f"""```
-
-## Estatisticas
-- Linguagem principal: {info.get('language', 'N/A')}
-- Arquivos: {info['files']}
-- Pastas: {info['dirs']}
-- Linhas de codigo: {info['lines']:,}
-
-## Arquivos-chave
-"""
-    for kf in info.get('key_files', [])[:5]:
-        readme += f"- `{kf['path']}` ({kf['lines']} lines)\n"
-
-    readme += f"""
----
-*Gerado automaticamente pelo Hermes Workbench em {datetime.now().strftime('%Y-%m-%d %H:%M')}*
-"""
-    readme_path = os.path.join(docs_dir, "README.md")
-    with open(readme_path, 'w', encoding='utf-8') as f:
-        f.write(readme)
-    print("  ✅ docs/README.md")
-
-    # STRUCTURE.md
-    struct = f"""# Estrutura do Projeto - {project_name}
-
-## Arvore de Diretorios
-```
-{tree}
-```
-"""
-    struct_path = os.path.join(docs_dir, "STRUCTURE.md")
-    with open(struct_path, 'w', encoding='utf-8') as f:
-        f.write(struct)
-    print("  ✅ docs/STRUCTURE.md")
-
-    # API.md (se FastAPI)
-    has_fastapi = any('fastapi' in f.lower() for f in os.listdir(path) if f.endswith('.py')) or \
-                  any('fastapi' in open(os.path.join(root, f), encoding='utf-8', errors='ignore').read()[:500]
-                      for root, _, files in os.walk(path) for f in files[:20] if f.endswith('.py'))
-    if has_fastapi:
-        api_doc = f"""# API Reference - {project_name}
-
-## Endpoints
-*Gerado por deteccao automatica. Para documentacao completa, execute o servidor e acesse /docs*
-
-## Modelos
-*Gerado por deteccao automatica.*
-
----
-*Gerado automaticamente pelo Hermes Workbench*
-"""
-        api_path = os.path.join(docs_dir, "API.md")
-        with open(api_path, 'w', encoding='utf-8') as f:
-            f.write(api_doc)
-        print("  ✅ docs/API.md (FastAPI detectado)")
-
-    print(f"\n✅ Documentacao gerada em {docs_dir}/")
-    print(f"   Arquivos: {len(os.listdir(docs_dir))}")
+    print("📖 Comando docs desabilitado (s3_headroom removido)")
+    print("   Use arvore de diretorios manual ou ferramenta externa.")
     return 0
 
 
@@ -2154,36 +2064,21 @@ def cmd_panorama_direct(args):
     if not args:
         print("Uso: panorama <path>")
         return 1
-    from s3_headroom import project_load, project_map
-    path = args[0]
-    info = project_load(path)
-    print("📊 ESTRUTURA DO PROJETO")
-    print(f"  Linguagem: {info.get('language', 'N/A')}")
-    print(f"  Arquivos:  {info['files']}")
-    print(f"  Pastas:    {info['dirs']}")
-    print(f"  Linhas:    {info['lines']:,}")
-    tree = project_map(path, max_depth=2)
-    for line in tree.split('\n')[:20]:
-        print(f"  {line}")
+    print("📊 Comando panorama desabilitado (s3_headroom removido)")
     return 0
 
 def cmd_compress_direct(args):
     if not args:
         print("Uso: compress <texto>")
         return 1
-    from s3_headroom import context_compress
-    print(context_compress(" ".join(args)))
+    print("📦 Comando compress desabilitado (s3_headroom removido)")
     return 0
 
 def cmd_search_direct(args):
     if len(args) < 2:
         print("Uso: search <path> <query>")
         return 1
-    from s3_headroom import solution_search
-    results = solution_search(args[0], " ".join(args[1:]))
-    for r in results[:5]:
-        print(f"  {r['file']}:{r['line']}")
-        print(f"    {r['snippet'][:100]}")
+    print("🔍 Comando search desabilitado (s3_headroom removido)")
     return 0
 
 def cmd_router_direct(args):
@@ -2273,9 +2168,6 @@ def _import_and_run(module_name, wrapper_name, args):
 
 def _fallback_command(module_name, args):
     """Fallback para comandos originais quando wrapper nao existe."""
-    if module_name == 's3_headroom':
-        if len(sys.argv) > 2:
-            return _orig_wrapper(args)
     return 1
 
 
@@ -2287,25 +2179,13 @@ def _orig_wrapper(args):
     rest = args[1:]
 
     if cmd == 'panorama':
-        from s3_headroom import project_load
-        if not rest:
-            print("Uso: panorama <path>")
-            return 1
-        path = rest[0]
-        info = project_load(path)
-        print(json.dumps({k: v for k, v in info.items() if k != 'key_files'}, indent=2))
+        print("📊 panorama desabilitado (s3_headroom removido)")
         return 0
     elif cmd == 'compress':
-        from s3_headroom import context_compress
-        print(context_compress(" ".join(rest)))
+        print("📦 compress desabilitado (s3_headroom removido)")
         return 0
     elif cmd == 'search':
-        from s3_headroom import solution_search
-        if len(rest) < 2:
-            print("Uso: search <path> <query>")
-            return 1
-        results = solution_search(rest[0], " ".join(rest[1:]))
-        print(json.dumps(results, indent=2))
+        print("🔍 search desabilitado (s3_headroom removido)")
         return 0
     return 1
 
@@ -2403,7 +2283,7 @@ def cmd_status(args):
     print(f"  {'🟢' if tl('pythonw.exe') else '🔴'} Watchdog (pythonw)    pythonw.exe")
 
     wd = os.path.dirname(os.path.abspath(__file__))
-    tools = [("s3_headroom.py","🧠 S3 Headroom"),("s3_grep.py","🔍 S3 Grep"),
+    tools = [("s3_grep.py","🔍 S3 Grep"),
              ("s1_router.py","🧭 S1 Router"),("watchdog_hermes.py","⚙️ Watchdog"),
              ("shellz_menu.bat","🖥️ Shellz Menu")]
     print("\n  FERRAMENTAS INSTALADAS:")

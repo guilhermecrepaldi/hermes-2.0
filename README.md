@@ -122,10 +122,8 @@ neo-hermes/
 ├── hermes_workbench.py        # CLI principal
 ├── watchdog/
 │   ├── s1_executor.py         # Executor de tarefas simples (Ollama)
-│   ├── s3_headroom.py         # Executor de tarefas complexas (DeepSeek)
 │   ├── shellz.py              # Roteador Shellz
-│   ├── headroom.py            # Proxy headroom.ai
-│   ├── headroom_config.yaml   # Config do headroom
+│   ├── s3_grep.py             # Busca grep.app
 │   └── telemetria.py          # Telemetria de custos
 ├── skills/                    # Skills do sistema (SKILL.md)
 ├── hooks/                     # Hooks de validação

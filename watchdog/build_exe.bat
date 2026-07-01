@@ -25,7 +25,6 @@ del /f /q hermes-workbench.spec 2>nul
 
 echo [2/3] Compilando executavel...
 pyinstaller --onefile --name hermes-workbench --clean ^
-    --add-data "s3_headroom.py;." ^
     --add-data "s3_grep.py;." ^
     --add-data "s1_router.py;." ^
     hermes_workbench.py

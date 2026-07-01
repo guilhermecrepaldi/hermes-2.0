@@ -36,7 +36,7 @@ print("-" * 70)
 
 hermes_files = {
     "hermes_workbench.py": "CLI unificada + 30+ comandos",
-    "s3_headroom.py": "Context optimization layer",
+    "s3_headroom.py": "Removido (compress inline via Ollama)",
     "s3_grep.py": "grep.app integration",
     "s1_router.py": "Task classifier S1/S2/S3",
     "watchdog_hermes.py": "Watchdog em Python (zero janela)",
@@ -93,7 +93,7 @@ capabilities = {
     },
     "Context Compression": {
         "original": "Nativa do Hermes Agent",
-        "workbench": "s3_headroom: compress() reduz tool outputs em ~78%",
+        "workbench": "Removido (compress inline via Ollama)",
         "status": "~50-90% menos tokens"
     },
     "ExplainShell (270 flags)": {
@@ -254,7 +254,7 @@ print("""
     - Pipeline F1-F4 + Quality Gate
 
   Semana 1 (Jun 11-12): Ferramentas S3
-    - S3 Headroom (project_load, compress, search, map)
+    - S3 Headroom: removido (compress inline via Ollama)
     - S3 Grep (busca 1M+ repos) + S1 Router
     - ExplainShell + DevToys (15 ferramentas)
     - Pipeline OBRIGATORIO (prioridade 999)

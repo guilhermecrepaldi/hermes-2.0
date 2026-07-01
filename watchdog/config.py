@@ -24,7 +24,6 @@ SHELL_COSTS = {"S1": "$0,00 🆓", "S2": "~$0.15/M ☁️", "S3": "~$0.50/M 🧠
 
 # --- Watchdog ---
 WATCHDOG_FILES = [
-    ("s3_headroom.py", "🧠 S3 Headroom"),
     ("s3_grep.py", "🔍 S3 Grep"),
     ("s1_router.py", "🧭 S1 Router"),
     ("watchdog_hermes.py", "⚙️ Watchdog"),
