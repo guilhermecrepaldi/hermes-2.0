@@ -128,16 +128,54 @@ Instalar se precisar: `pip install openpyxl loguru flask`
 ### Venv Agent Reach (`~/.agent-reach-venv/`)
 Tem suas próprias deps (agent-reach, loguru, win32-setctime)
 
-## 9. RECUPERAÇÃO (PC formatou?)
+## 9. AUTO-START (Windows)
 
+### O que inicia com o Windows
+
+| Item | Arquivo | O que faz |
+|------|---------|-----------|
+| **Ollama** | `startup\hermes_ollama.vbs` | Inicia Ollama em background (invisível) |
+| **Ambiente** | `startup\start_ambiente.bat` | Verifica Ollama, modelo S1, OpenCLI |
+| **Gateway** | `startup\Hermes_Gateway.vbs` | Gateway do Hermes |
+
+**Headroom removido.** Não inicia mais.
+
+### Startup folder
+```
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\
+├── Hermes_Gateway.vbs      ← Gateway Hermes
+├── hermes_ollama.vbs        ← Ollama invisível
+└── start_ambiente.bat       ← Verificação do ambiente
+```
+
+### Verificação manual
+```bash
+start_ambiente.bat                           # Iniciar ambiente
+cd ~/neo-hermes && python watchdog/health_check.py   # Saúde detalhada
+```
+
+### Cron job ativo
+- **Nome:** `saude-ambiente`
+- **Frequência:** A cada 30 minutos
+- **Tipo:** Script puro (sem LLM) — verifica Ollama, modelo S1, OpenCLI, repo
+- **Visualizar:** `cronjob action=list`
+
+## 10. SETUP PÓS-FORMAÇÃO
+
+**Script automático:**
+```powershell
+powershell -ExecutionPolicy Bypass -File "~/neo-hermes/watchdog/setup_novo_pc.ps1"
+```
+
+Ou siga manual:
 1. Instalar Hermes Desktop
 2. Clonar repo: `git clone https://github.com/guilhermecrepaldi/neo-hermes.git`
-3. Seguir `~/neo-hermes/hermes-config-essentials.md`
-4. Instalar Ollama + `ollama pull qwen2.5-coder:7b`
-5. Instalar Agent Reach (skill `agent-reach` → referência `install-windows.md`)
-6. Configurar autoload: `hermes config set autoload_skills "caveman-hermes,agent-reach,shellz-environment"`
+3. Rodar: `cd neo-hermes && powershell -File watchdog/setup_novo_pc.ps1`
+4. Instalar Agent Reach: `pip install https://github.com/Panniantong/agent-reach/archive/main.zip`
+5. Instalar OpenCLI: `npm install -g @jackwener/opencli`
+6. Seguir `AMBIENTE.md` para verificar tudo
 
-## 10. COMANDOS RÁPIDOS
+## 11. DEPENDÊNCIAS PYTHON
 
 ```bash
 # Saúde
