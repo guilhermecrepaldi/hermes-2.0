@@ -1,7 +1,8 @@
-# 📚 DIREITO LUX — Dicionário Técnico & Referência Arquitetural
+# 📚 JUS PLATFORM — Dicionário Técnico & Referência Arquitetural (PaaS)
 
 > **Clean Room Spec** — Jul/2026. 100% original.
 > Síntese de: DataJud CNJ, LegalNLP, BrasilAPI, Direito Lux MVP, ECC Agent OS.
+> **Arquitetura: Platform as a Service (PaaS) — API-first, multi-tenant, escalável.**
 > Para pesquisa, estudo, entrevistas e implementações futuras.
 
 ---
@@ -11,13 +12,14 @@
 1. [Glossário Jurídico-Técnico](#1-glossário-jurídico-técnico)
 2. [APIs e Endpoints](#2-apis-e-endpoints)
 3. [Modelo de Domínio Unificado](#3-modelo-de-domínio-unificado)
-4. [Pipeline de Dados](#4-pipeline-de-dados)
+4. [Arquitetura PaaS](#4-arquitetura-paas)
 5. [Tribunais Brasileiros — Catálogo Completo](#5-tribunais-brasileiros)
 6. [NLP Jurídico Brasileiro](#6-nlp-jurídico-brasileiro)
 7. [Boas Práticas e Padrões](#7-boas-práticas-e-padrões)
 8. [Stack Recomendada](#8-stack-recomendada)
-9. [Features Sugeridas](#9-features-sugeridas)
-10. [Referências e Fontes](#10-referências-e-fontes)
+9. [Features e Produtos](#9-features-e-produtos)
+10. [Plano de Monetização](#10-plano-de-monetização)
+11. [Referências e Fontes](#11-referências-e-fontes)
 
 ---
 
@@ -52,7 +54,7 @@
 | **Índice ES** | Coleção de documentos no Elasticsearch. Cada tribunal tem seu próprio padrão de índice. |
 | **Query Bool** | Tipo de query ES que combina `must`, `should` e `filter` para buscas complexas. |
 | **Circuit Breaker** | Padrão de resiliência: se um serviço falha N vezes seguidas, bloqueia requisições por um período. |
-| **Cache Key** | Hash único que identifica uma consulta. `sha256(f"{tipo}:{tribunal}:{parametros_normalizados}")`. |
+| **Cache Key** | Hash único que identifica uma consulta. `sha256(f"{api_key}:{tipo}:{tribunal}:{parametros}")`. |
 | **Sliding Window** | Algoritmo de rate limit que conta requisições em uma janela temporal deslizante. |
 | **Backoff Exponencial** | Estratégia de retry: delay aumenta progressivamente (1s, 3s, 5s...). |
 | **Stale-while-revalidate** | Estratégia de cache: serve conteúdo velho enquanto atualiza em background. |
@@ -60,245 +62,330 @@
 | **Mascaramento RegEx** | Técnica de substituição de padrões via expressões regulares (CPF → `[documento]`). |
 | **Falha Recuperável** | Erro temporário que justifica retry: timeout, 5xx, conexão recusada. |
 | **Falha Permanente** | Erro que não deve ser retentado: 400, 401, 403, 404. |
-| **SLA** | Service Level Agreement — acordo de nível de serviço (ex: 99.9% uptime). |
+| **API Key** | Chave de autenticação para consumir a plataforma. Gerada por app/usuário. |
+| **Quota** | Limite de consumo por API Key (requisições/dia, req/min, endpoints disponíveis). |
+| **Planos** | Tier de serviço: Free, Pro, Business, Enterprise — cada um com quotas diferentes. |
+| **Webhook** | Callback HTTP que a plataforma chama quando um evento ocorre (ex: nova movimentação). |
+| **Data Enrichment** | Enriquecimento de dados: cruzar DataJud + BrasilAPI + LGPD para gerar insights. |
+
+### Termos PaaS
+
+| Termo | Definição |
+|-------|-----------|
+| **Control Plane** | Camada de gerenciamento: cadastro de apps, API keys, quotas, billing, dashboard. |
+| **Data Plane** | Camada de execução: processamento de requisições, cache, upstream calls. |
+| **Gateway** | Ponto único de entrada da plataforma. Roteia, autentica, rate-limit, loga. |
+| **App** | Aplicação cliente que consome a plataforma. Tem seu próprio API Key e quota. |
+| **Tenant Isolation** | Isolamento de dados entre apps: app A não vê dados do app B. |
+| **Usage Metering** | Medição de consumo por API Key para billing. |
+| **Developer Hub** | Portal do desenvolvedor: docs, SDKs, playground, dashboard. |
 
 ---
 
 ## 2. APIs e Endpoints
 
-### 2.1 DataJud (CNJ) — Processos Judiciais
-
-Base nacional de processos judiciais, exposta como Elasticsearch.
+### 2.1 Padrão de Endpoint
 
 ```
-Base URL:      https://datajud.cnj.jus.br
-Autenticação:  API Key por CNPJ provider (credenciamento CNJ)
-Método:        POST /{indice_tribunal}/_search
-Formato:       JSON (Elasticsearch Query DSL)
-Cache Vercel:  24h (service-side)
+https://api.jusplatform.com/{produto}/{versao}/{recurso}
+
+Headers obrigatórios:
+  X-API-Key:     {api_key_da_app}
+  Content-Type:  application/json
+
+Resposta padrão:
+  {
+    "success": true,
+    "data": { ... },
+    "meta": {
+      "request_id": "uuid",
+      "processing_time_ms": 234,
+      "credits_used": 1,
+      "credits_remaining": 999
+    }
+  }
 ```
 
-**Queries disponíveis:**
+### 2.2 Catálogo de APIs
 
-| Tipo | Campos ES | Descrição |
-|------|-----------|-----------|
-| Processo | `numeroProcesso` | Busca por número único do processo |
-| Movimentações | `numeroProcesso` + `tipoDocumento: "movimentacao"` | Andamentos processuais |
-| Partes | `numeroProcesso` + `tipoDocumento: "parte"` | Partes envolvidas |
-| Documentos | `numeroProcesso` + `tipoDocumento: "documento"` | Documentos juntados |
-| Lote | `should: [{numeroProcesso: N1}, {numeroProcesso: N2}]` | Múltiplos processos |
-| CPF/CNPJ | `numeroDocumentoParte` | Busca por documento da parte |
-| Nome | `nomeParte` | Busca por nome da parte |
+#### 🏛️ Produto: JUD (Dados Processuais)
 
-**Campos ES relevantes do `_source`:**
+| Endpoint | Versão | Descrição | Créditos |
+|----------|:------:|-----------|:--------:|
+| `GET /jud/v1/processos/{numero}` | v1 | Dados completos de um processo | 1 |
+| `GET /jud/v1/processos/{numero}/movimentacoes` | v1 | Movimentações de um processo | 1 |
+| `GET /jud/v1/processos/{numero}/partes` | v1 | Partes de um processo | 1 |
+| `POST /jud/v1/processos/lote` | v1 | Consulta em lote (até 50) | 10 |
+| `GET /jud/v1/busca?documento={cpf/cnpj}` | v1 | Busca processos por CPF/CNPJ | 2 |
+| `GET /jud/v1/busca?nome={nome_parte}` | v1 | Busca processos por nome | 3 |
+| `GET /jud/v1/tribunais` | v1 | Lista tribunais disponíveis | 0 |
 
-```
-numeroProcesso        → string
-classe                → string (código + nome)
-assunto               → objeto (árvore de assuntos CNJ)
-tribunal              → string (sigla do tribunal)
-situacao              → string (situação do processo)
-grauOrigem            → string (1 ou 2)
-dataAjuizamento       → datetime
-dataHoraUltimaAtualizacao → datetime
-numeroDocumentoParte  → string (CPF/CNPJ)
-nomeParte             → string
-tipoParte             → string (PESSOA_FISICA, PESSOA_JURIDICA)
-papelParte            → string (AUTOR, REU, TERCEIRO, ADVOGADO...)
-dataHora              → datetime (da movimentação)
-codigoMovimento       → string (código CNJ)
-tipoMovimento         → string
-descricaoMovimento    → string
-complementoMovimento  → string
-sigiloso              → bool
-valorCausa            → float
-```
+**Cache (server-side):** 30min a 2h dependendo do recurso.
 
-### 2.2 BrasilAPI — Dados Públicos Brasileiros
+#### 🏢 Produto: EMP (Dados de Empresas)
 
-Agregador open-source de APIs governamentais. MIT License.
+| Endpoint | Versão | Descrição | Créditos |
+|----------|:------:|-----------|:--------:|
+| `GET /emp/v1/cnpj/{cnpj}` | v1 | Dados completos da empresa | 1 |
+| `GET /emp/v1/cnpj/{cnpj}/socios` | v1 | Quadro societário | 1 |
+| `POST /emp/v1/cnpj/lote` | v1 | Consulta CNPJ em lote (até 50) | 10 |
+| `GET /emp/v1/cep/{cep}` | v1 | Endereço por CEP | 0 |
 
-```
-Base URL:      https://brasilapi.com.br
-Cache CDN:     Vercel Smart CDN (23 regiões)
-Formato:       JSON
-Rate Limit:    Uso consciente (sem crawling automático)
-```
+**Cache (server-side):** 24h a 48h.
 
-**Endpoints:**
+#### 🤖 Produto: NLP (Processamento de Texto Jurídico)
 
-| Rota | Exemplo | Cache | Descrição |
-|------|---------|:-----:|-----------|
-| `GET /api/cep/v1/{cep}` | `01310100` | 48h | Endereço por CEP (Correios + ViaCEP + OpenCEP) |
-| `GET /api/cep/v2/{cep}` | `01310100` | 48h | Endereço + coordenadas geográficas |
-| `GET /api/cnpj/v1/{cnpj}` | `00000000000191` | 24h | Dados completos da empresa |
-| `GET /api/banks/v1` | - | 24h | Todos os bancos brasileiros |
-| `GET /api/ddd/v1/{ddd}` | `11` | 24h | Cidades e operadoras por DDD |
-| `GET /api/feriados/v1/{ano}` | `2026` | Anual | Feriados nacionais |
-| `GET /api/fipe/preco/v1/{codigo}` | código FIPE | 24h | Preço de veículos |
-| `GET /api/ibge/uf/v1` | - | Anual | Estados brasileiros |
-| `GET /api/ibge/municipios/v1/{uf}` | `SP` | Anual | Municípios por UF |
-| `GET /api/isbn/v1/{isbn}` | `978...` | 7d | Dados do livro |
-| `GET /api/ncm/v1/{ncm}` | código NCM | 24h | Nomenclatura fiscal |
-| `GET /api/pix/v1/participants` | - | 24h | Participantes do Pix |
-| `GET /api/taxas/v1` | - | 24h | Taxas de juros (Selic, etc.) |
-| `GET /api/registrobr/v1/{dominio}` | `dominio.com.br` | 24h | Status de domínio .br |
-| `GET /api/cvm/v1/{tipo}` | tipo | 24h | Dados CVM (fundos) |
+| Endpoint | Versão | Descrição | Créditos |
+|----------|:------:|-----------|:--------:|
+| `POST /nlp/v1/limpar` | v1 | Limpeza e normalização de texto jurídico | 1 |
+| `POST /nlp/v1/anonimizar` | v1 | Anonimização LGPD de texto jurídico | 2 |
+| `POST /nlp/v1/extrair` | v1 | Extração de entidades (OAB, valores, prazos) | 2 |
+| `POST /nlp/v1/classificar` | v1 | Classificação de peça processual | 3 |
+| `POST /nlp/v1/sumarizar` | v1 | Sumarização de andamento/decisão | 3 |
+| `POST /nlp/v1/gerar` | v1 | Geração de minuta de petição | 5 |
 
-**Estrutura da resposta CNPJ (minhareceita.org):**
+**Cache:** Não aplicável (cada requisição é única).
 
-```json
-{
-  "cnpj": "00000000000191",
-  "razao_social": "EMPRESA EXEMPLO LTDA",
-  "nome_fantasia": "EMPRESA EXEMPLO",
-  "situacao_cadastral": "Ativa",
-  "data_situacao_cadastral": "2020-01-01",
-  "endereco": {
-    "logradouro": "Rua Exemplo",
-    "numero": "100",
-    "bairro": "Centro",
-    "municipio": "São Paulo",
-    "uf": "SP",
-    "cep": "01000-000"
-  },
-  "cnae_fiscal": 6202300,
-  "cnae_fiscal_descricao": "Desenvolvimento de programas de computador sob encomenda",
-  "capital_social": 100000.00,
-  "natureza_juridica": "Sociedade Empresária Limitada",
-  "qsa": [
-    {"nome": "JOÃO SILVA", "qualificacao": "Sócio-Administrador"}
-  ],
-  "opcao_pelo_simples": true,
-  "data_opcao_pelo_simples": "2020-01-01",
-  "porte": "ME"
-}
-```
+#### 📊 Produto: SCORE (Análise Inteligente)
 
-### 2.3 Fontes Alternativas (Fallbacks)
+| Endpoint | Versão | Descrição | Créditos |
+|----------|:------:|-----------|:--------:|
+| `POST /score/v1/risco-processual` | v1 | Score de risco de um processo | 5 |
+| `POST /score/v1/similaridade` | v1 | Similaridade entre casos | 3 |
+| `GET /score/v1/jurimetria/{tribunal}/{classe}` | v1 | Estatísticas por tribunal/classe | 10 |
+| `POST /score/v1/prever-resultado` | v1 | Predição de resultado | 10 |
 
-| Fonte | URL | Uso | Limitação |
-|-------|-----|:---:|-----------|
-| OpenCEP | `https://opencep.com/v1/{cep}` | CEP gratuito | Menos campos |
-| ViaCEP | `https://viacep.com.br/ws/{cep}/json/` | CEP oficial | Latência |
-| Minha Receita | `https://minhareceita.org/{cnpj}` | CNPJ gratuito | Pode cair |
-| IBGE API | `https://servicodados.ibge.gov.br/api/v1/` | Dados demográficos | Lento |
-| BCB Dados Abertos | `https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados` | Série histórica | Formato CSV |
-| HuggingFace LegalNLP | `https://huggingface.co/felipemaiapolo/legalnlp-bert` | BERT jurídico | Modelo ML |
+#### ⚙️ Produto: ADMIN (Gerenciamento da Plataforma)
 
-### 2.4 Ollama — IA Local
+| Endpoint | Versão | Autenticação | Descrição |
+|----------|:------:|:------------:|-----------|
+| `GET /admin/v1/usage` | v1 | API Key + User | Consulta de consumo |
+| `GET /admin/v1/quotas` | v1 | API Key + User | Limites do plano |
+| `POST /admin/v1/webhooks` | v1 | API Key + User | Gerenciar webhooks |
+| `GET /admin/v1/logs` | v1 | API Key + User | Logs de requisições |
+| `GET /admin/v1/health` | v1 | Pública | Status da plataforma |
+
+### 2.3 Webhooks
+
+Notificações push quando eventos ocorrem:
 
 ```
-Base URL:      http://localhost:11434
-Formato:       JSON (API compatível com OpenAI)
-Modelos disp:  qwen2.5-coder:7b, llama3.1:8b, mistral, gemma3
-Custo:         $0
-LGPD:          ✅ Dados nunca saem da máquina
+POST {url_do_cliente}/webhook/jud/movimentacao
+  Body: {
+    "event": "jud.movimentacao",
+    "data": {
+      "processo": "NNNNNNN-DD.AAAA.T.RRRR.NNNNN",
+      "tribunal": "TJSP",
+      "movimentacao": { ... },
+      "timestamp": "2026-07-02T10:00:00Z"
+    }
+  }
+
+Eventos disponíveis:
+  jud.movimentacao        → Nova movimentação em processo monitorado
+  jud.prazo_proximo       → Prazo processual se aproximando
+  emp.cnpj_alterado       → Dados cadastrais mudaram
+  nlp.processado          → Processamento NLP concluído
 ```
+
+### 2.4 Fontes de Dados (Upstreams)
+
+| Fonte | URL | Uso | Cache | Cobertura |
+|-------|-----|:---:|:-----:|:---------:|
+| DataJud ES | `POST /{indice}/_search` | Processos judiciais | 30min | Nacional |
+| BrasilAPI | `GET /api/cnpj/v1/{cnpj}` | CNPJ via minhareceita | 24h | Nacional |
+| BrasilAPI | `GET /api/cep/v1/{cep}` | CEP multi-provider | 48h | Nacional |
+| OpenCEP | `GET /v1/{cep}` | CEP fallback | 48h | Nacional |
+| ViaCEP | `GET /ws/{cep}/json` | CEP fallback 2 | 48h | Nacional |
+| Ollama | `POST /api/chat` | IA local (LGPD) | N/A | Local |
+| LegalNLP | pip package | NLP jurídico | N/A | Python |
+| BERTikal | HuggingFace | Classificação BERT | N/A | Modelo |
 
 ---
 
 ## 3. Modelo de Domínio Unificado
 
-### 3.1 Estrutura de Dados
+### 3.1 Arquitetura de Entidades (PaaS Context)
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                  SOLICITAÇÃO DE CONSULTA                │
-├─────────────────────────────────────────────────────────┤
-│ id: UUID                                                │
-│ tipo: [processo, movimentacoes, partes, documento,      │
-│        lote, cnpj, cep, ddd]                           │
-│ tenant_id: UUID                                         │
-│ usuario_id: UUID                                        │
-│ prioridade: [baixa, normal, alta, urgente]               │
-├─────────────────────────────────────────────────────────┤
-│ PARÂMETROS                                              │
-├─────────────────────────────────────────────────────────┤
-│ numero_processo: string?   (NNNNNNN-DD.AAAA.T.RRRR.NN) │
-│ tribunal: string?          (TJSP, TRF1, TRT2...)       │
-│ documento: string?         (CPF ou CNPJ)               │
-│ nome_parte: string?                                     │
-│ cep: string?               (somente dígitos)            │
-│ pagina: int?               (paginação da resposta)      │
-│ data_inicio: date?                                      │
-│ data_fim: date?                                         │
-├─────────────────────────────────────────────────────────┤
-│ cache_key: string          (hash sha256 dos params)    │
-│ status: [pendente, processando, concluido, falhou,     │
-│          em_cache]                                      │
-│ max_tentativas: int         (default: 3)               │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        SISTEMA JUS PLATFORM                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                  CONTROL PLANE                          │   │
+│  │                                                         │   │
+│  │  Apps/Clientes ──├── Planos ──├── API Keys ──├── Quotas│   │
+│  │  Billing ──├── Usage ──├── Webhooks ──├── Logs        │   │
+│  │  Developer Hub ──├── Docs ──├── SDKs                   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                              │                                  │
+│                              ▼                                  │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                     DATA PLANE                          │   │
+│  │                                                         │   │
+│  │  Gateway ──├── Auth ──├── Rate Limit ──├── Router      │   │
+│  │                                                         │   │
+│  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────────────┐ │   │
+│  │  │ JUD  │ │ EMP  │ │ NLP  │ │SCORE │ │   ADMIN      │ │   │
+│  │  │ Svc  │ │ Svc  │ │ Svc  │ │ Svc  │ │   Svc        │ │   │
+│  │  └──┬───┘ └──┬───┘ └──┬───┘ └──┬───┘ └──────────────┘ │   │
+│  │     │        │        │        │                        │   │
+│  │     ▼        ▼        ▼        ▼                        │   │
+│  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                  │   │
+│  │  │Redis │ │Redis │ │Ollama│ │pgvec │                  │   │
+│  │  │Cache │ │Cache │ │Local │ │tor   │                  │   │
+│  │  └──────┘ └──────┘ └──────┘ └──────┘                  │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                   RESPOSTA DA CONSULTA                  │
-├─────────────────────────────────────────────────────────┤
-│ id: UUID                                                │
-│ solicitacao_id: UUID                                    │
-│ status_http: int                                        │
-│ duracao_ms: int                                         │
-│ veio_do_cache: bool                                     │
-├─────────────────────────────────────────────────────────┤
-│ DADOS DO PROCESSO (se tipo=processo)                    │
-├─────────────────────────────────────────────────────────┤
-│ encontrado: bool                                        │
-│ numero: string                                          │
-│ classe: string                                          │
-│ assunto: dict                                           │
-│ tribunal: string                                        │
-│ situacao: string                                        │
-│ instancia: int                                          │
-│ data_ajuizamento: date                                  │
-│ data_ultima_atualizacao: datetime                       │
-│ valor_causa: float?                                     │
-│ partes: Parte[]                                         │
-│ movimentacoes: Movimentacao[]                           │
-├─────────────────────────────────────────────────────────┤
-│ DADOS DA EMPRESA (se tipo=cnpj)                        │
-├─────────────────────────────────────────────────────────┤
-│ razao_social: string                                    │
-│ cnpj: string                                            │
-│ situacao: string                                        │
-│ endereco: Endereco                                      │
-│ cnae: string                                            │
-│ socios: Socio[]                                         │
-│ porte: string                                           │
-└─────────────────────────────────────────────────────────┘
-```
-
-### 3.2 Entidades Compartilhadas
+### 3.2 Entidades do Sistema
 
 ```typescript
+// ──── CONTROL PLANE ────
+
+interface App {
+  id: UUID
+  nome: string
+  descricao?: string
+  plano_id: UUID
+  ativo: boolean
+  created_at: datetime
+  owner_id: UUID       // Usuário dono da app
+}
+
+interface Plano {
+  id: UUID
+  nome: string          // Free, Pro, Business, Enterprise
+  precos: Preco[]       // Por período/mês
+  quotas: Quota[]       // Limites por produto
+  features: string[]    // Produtos disponíveis
+}
+
+interface APIKey {
+  key: string           // jwt_sk_live_xxxx ou jwt_sk_test_xxxx
+  app_id: UUID
+  ambiente: 'test' | 'live'
+  ativo: boolean
+  created_at: datetime
+  ultimo_uso?: datetime
+}
+
+interface Quota {
+  produto: 'jud' | 'emp' | 'nlp' | 'score'
+  requests_per_minute: number
+  requests_per_day: number
+  cache_enabled: boolean
+  webhooks_enabled: boolean
+}
+
+interface UsageRecord {
+  id: UUID
+  api_key_id: UUID
+  app_id: UUID
+  endpoint: string
+  produto: string
+  credits_used: number
+  status_code: number
+  processing_time_ms: number
+  created_at: datetime
+}
+
+interface Webhook {
+  id: UUID
+  app_id: UUID
+  url: string
+  eventos: string[]     // ["jud.movimentacao", "jud.prazo_proximo"]
+  ativo: boolean
+  ultimo_disparo?: datetime
+  ultimo_erro?: string
+}
+
+// ──── DATA PLANE ────
+
+interface Request {
+  id: UUID
+  api_key: string
+  endpoint: string
+  params: object
+  produto: string
+  timestamp: datetime
+}
+
+interface Response {
+  success: boolean
+  data: object | null
+  error?: {
+    code: string
+    message: string
+    details?: object
+  }
+  meta: {
+    request_id: UUID
+    processing_time_ms: number
+    credits_used: number
+    credits_remaining: number
+    cached: boolean
+    source?: string       // datajud, brasileapi, ollama
+  }
+}
+
+interface CacheEntry {
+  key: string
+  value: object
+  ttl: number
+  created_at: datetime
+  api_key_id?: UUID      // Namespace por app
+}
+```
+
+### 3.3 Modelo de Dados (Processo Judicial)
+
+```typescript
+interface Processo {
+  numero: string            // NNNNNNN-DD.AAAA.T.RRRR.NNNNN
+  encontrado: boolean
+  classe: string            // Código + descrição
+  assunto: object           // Árvore CNJ
+  tribunal: string          // TJSP, TRF1...
+  situacao: string          // Em andamento, Arquivado, Suspenso
+  instancia: 1 | 2
+  data_ajuizamento: string  // ISO date
+  data_ultima_atualizacao: string // ISO datetime
+  valor_causa?: number
+  segredo_justica: boolean
+  partes: Parte[]
+  movimentacoes?: Movimentacao[]
+}
+
 interface Parte {
   tipo: 'PESSOA_FISICA' | 'PESSOA_JURIDICA'
   nome: string
-  documento: string          // CPF ou CNPJ (mascarado se LGPD)
+  documento: string         // CPF/CNPJ
   papel: string             // AUTOR, REU, TERCEIRO, ADVOGADO
   advogado?: {
     nome: string
-    oab: string             // Número da OAB
+    oab: string
     uf: string
   }
 }
 
 interface Movimentacao {
   sequencia: number
-  data: datetime
+  data: string              // ISO datetime
   codigo: string            // Código CNJ do movimento
   descricao: string
   complemento?: string
   sigiloso: boolean
-  valor?: float
+  valor?: number
 }
 
 interface Tribunal {
-  codigo: string            // TJSP, TRF1, TRT2, STF...
+  codigo: string            // TJSP, TRF1, TRT2...
   nome: string
   indice_es: string         // api_publica_tjsp
   tipo: TribunalTipo
-  instancia: 1 | 2
   regiao: string
   ativo: boolean
 }
@@ -307,97 +394,138 @@ type TribunalTipo =
   | 'supremo' | 'superior' | 'federal'
   | 'estadual' | 'trabalho' | 'eleitoral' | 'militar'
 
-interface Endereco {
-  logradouro: string
-  numero: string
-  complemento?: string
-  bairro: string
-  cidade: string
-  uf: string
-  cep: string
-}
-
-interface Socio {
-  nome: string
-  qualificacao: string
-  percentual?: float
+interface Empresa {
+  cnpj: string
+  razao_social: string
+  nome_fantasia?: string
+  situacao: string
+  endereco: {
+    logradouro: string
+    numero: string
+    bairro: string
+    cidade: string
+    uf: string
+    cep: string
+  }
+  cnae: string
+  capital_social: number
+  socios: Array<{
+    nome: string
+    qualificacao: string
+  }>
+  porte: 'ME' | 'EPP' | 'DEMAIS'
 }
 ```
 
 ---
 
-## 4. Pipeline de Dados
+## 4. Arquitetura PaaS
 
-### 4.1 Arquitetura em Camadas
+### 4.1 Control Plane vs Data Plane
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          API GATEWAY                               │
-│              FastAPI + Rate Limit + Auth JWT                       │
-│              CORS + Cache (s-maxage) + Logger                      │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     ORQUESTRADOR DE CONSULTAS                      │
-│                                                                     │
-│  ┌──────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────┐ │
-│  │  Cache   │  │  Circuit     │  │  Rate        │  │  Tribunal  │ │
-│  │  (Redis) │→ │  Breaker     │→ │  Limiter     │→ │  Router    │ │
-│  └──────────┘  └──────────────┘  └──────────────┘  └────────────┘ │
-│   ├ hash(params)  ├ por tribunal  ├ sliding window  ├ código→índice│
-│   ├ TTL por tipo  ├ 5 falhas→30s  ├ por tenant      ├ + fallback   │
-│   └ namespace     └ half-open     └ por plano       └ alternativo  │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                   CLIENTE DE CONSULTA (com retry)                   │
-│                                                                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐  │
-│  │  Query       │  │  HTTP        │  │  Response                │  │
-│  │  Builder     │→ │  Client      │→ │  Parser                  │  │
-│  │              │  │              │  │                          │  │
-│  │ monta JSON   │  │ POST _search │  │ ES hits → domain objects │  │
-│  │ ES Query DSL │  │ timeout 30s  │  │ extração de campos       │  │
-│  │              │  │ retry 3x     │  │ normalização de datas    │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────────┘  │
-│                                                                     │
-│  FONTES: DataJud (ES), BrasilAPI, minhareceita.org                  │
-│  FALLBACK: DataJud → scraper tribunal, OpenCEP → ViaCEP            │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                      PROCESSADOR DE SAÍDA                          │
-│                                                                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐  │
-│  │  Formatador  │  │  Cache       │  │  Métricas                │  │
-│  │  JSON        │→ │  Store       │→ │  Prometheus              │  │
-│  │              │  │              │  │                          │  │
-│  │ schema único │  │ redis.setex  │  │ duração, hits, erros     │  │
-│  │ padronizado  │  │ com TTL      │  │ circuit breaker state    │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────────┘  │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                   CAMADA DE INTELIGÊNCIA (opcional)                │
-│                                                                     │
-│  ┌──────────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
-│  │  Anonimizador    │  │  Ollama      │  │  LLM Cloud           │ │
-│  │  LGPD            │→ │  Local       │→ │  (opcional)          │ │
-│  │                  │  │              │  │                      │ │
-│  │ mascara CPF/OAB  │  │ sumarização  │  │ jurimetria complexa  │ │
-│  │ remove nomes     │  │ classificação│  │ geração documentos   │ │
-│  └──────────────────┘  └──────────────┘  └──────────────────────┘ │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │
-                           ▼
-                    RESPOSTA FINAL (JSON)
+                    PLANO DE CONTROLE
+┌──────────────────────────────────────────────────────────────┐
+│  Developer Hub (Next.js)                                     │
+│  ├── Cadastro/Login                                          │
+│  ├── Dashboard de consumo                                    │
+│  ├── Gerenciamento de API Keys                               │
+│  ├── Webhook Config                                          │
+│  ├── Playground (testar endpoints)                           │
+│  └── Documentação interativa                                 │
+│                                                              │
+│  Admin API (FastAPI CRUD)                                    │
+│  ├── /apps          → CRUD apps                              │
+│  ├── /api-keys      → CRUD chaves                            │
+│  ├── /plans         → CRUD planos                            │
+│  ├── /usage         → Consulta consumo                       │
+│  └── /webhooks      → CRUD webhooks                          │
+│                                                              │
+│  Billing Service                                             │
+│  ├── Stripe/Asaas integration                                │
+│  ├── Invoice generation                                      │
+│  └── Usage metering → billing                                │
+└──────────────────────────────────────────────────────────────┘
+                              │
+                    chamadas internas (gRPC/REST)
+                              │
+                              ▼
+                      PLANO DE DADOS
+┌──────────────────────────────────────────────────────────────┐
+│  API Gateway (FastAPI)                                       │
+│  ├── Roteamento: /jud/v1/* → JUD Service                    │
+│  ├── Autenticação: validar API Key                          │
+│  ├── Rate Limit: sliding window por key                     │
+│  ├── Cache: Redis (s-maxage)                                │
+│  ├── Logging: structured JSON                                │
+│  └── CORS: configurável por app                              │
+│                                                              │
+│  ┌────────┐  ┌────────┐  ┌────────┐  ┌───────────┐        │
+│  │ JUD    │  │ EMP    │  │ NLP    │  │ SCORE     │        │
+│  │Service │  │Service │  │Service │  │Service    │        │
+│  ├────────┤  ├────────┤  ├────────┤  ├───────────┤        │
+│  │DataJud │  │Brasil  │  │LegalNLP│  │Ollama +   │        │
+│  │ES Query│  │API     │  │+Ollama │  │pgvector   │        │
+│  │Circuit │  │Cache   │  │Process │  │Embeddings │        │
+│  │Breaker │  │24h     │  │Pipeline│  │Search     │        │
+│  └────────┘  └────────┘  └────────┘  └───────────┘        │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-### 4.2 Política de Retry
+### 4.2 Fluxo de Requisição
+
+```
+CLIENTE: GET https://api.jusplatform.com/jud/v1/processos/NNN...NN
+  Headers: { X-API-Key: "jus_sk_live_xxxxx" }
+  │
+  ▼
+1. API GATEWAY
+  ├── [Middleware] Log: request_id=uuid, timestamp
+  ├── [Middleware] CORS: verificar origin permitida
+  ├── [Middleware] Auth: validar API Key no Redis (cache 5min)
+  │   ├── App ID → buscar plano → verificar quotas
+  │   └── Se inválida → 401 { error: "API_KEY_INVALIDA" }
+  ├── [Middleware] Rate Limit: INCR chave no Redis
+  │   ├── Chave: "ratelimit:{app_id}:{produto}:minuto:{minuto_atual}"
+  │   ├── Se excedeu → 429 { error: "RATE_LIMIT_EXCEDIDO" }
+  │   └── TTL: 60s
+  ├── [Middleware] Cache: verificar GET
+  │   ├── Chave: "cache:{produto}:{app_id}:{parametros_hash}"
+  │   ├── Se existe e TTL > 0 → retornar 200 (cache hit)
+  │   └── Anotar: veio_do_cache=true
+  └── [Router] Direcionar para JUD Service
+  │
+  ▼
+2. JUD SERVICE (processo handler)
+  ├── [Validar] Formato do número do processo
+  │   └── Inválido → 400 { error: "NUMERO_PROCESSO_INVALIDO" }
+  ├── [Circuit Breaker] state = FECHADO?
+  │   ├── ABERTO → 503 { error: "TRIBUNAL_INDISPONIVEL" }
+  │   └── MEIO-ABERTO → permitir 1, medir resultado
+  ├── [Tribunal Mapper] código → índice ES
+  │   └── Inválido → 400 { error: "TRIBUNAL_INVALIDO" }
+  ├── [Query Builder] montar JSON ES Query DSL
+  ├── [Execução] POST {base_url}/{indice}/_search
+  │   ├── Timeout 30s → retry (max 3, backoff 1s/3s/5s)
+  │   ├── Falha permanente (4xx) → erro sem retry
+  │   └── Falha todas tentativas → 502 { error: "FONTE_EXTERNA_INDISPONIVEL" }
+  ├── [Parser] extrair hits → Processo domain object
+  │   └── Resposta vazia → 404 { error: "PROCESSO_NAO_ENCONTRADO" }
+  └── [Circuit Breaker] registrar sucesso/falha
+  │
+  ▼
+3. API GATEWAY (pós-processamento)
+  ├── [Cache] Store: redis.setex(chave_cache, ttl, resposta_serializada)
+  ├── [Usage] Record: registrar consumo (1 crédito)
+  │   ├── Redis: INCR "usage:{app_id}:{produto}:{dia}"
+  │   └── Async: enviar para fila de persistência (evitar bottleneck)
+  └── [Response] 200 + JSON padronizado + meta
+  │
+  ▼
+CLIENTE: Recebe resposta
+```
+
+### 4.3 Política de Retry (DataJud)
 
 ```
 Tentativa 0: delay 0s
@@ -406,53 +534,90 @@ Tentativa 2: delay 3s
 Tentativa 3: delay 5s (máximo)
 
 ✅ RETENTAR:
-  timeout de conexão, timeout de leitura
+  Timeout de conexão, Timeout de leitura
   HTTP 500, 502, 503, 504
-  erro de DNS, conexão recusada
+  Erro de DNS, Conexão recusada
 
 ❌ NÃO RETENTAR:
   HTTP 400 (Bad Request)
-  HTTP 401 (Unauthorized)
-  HTTP 403 (Forbidden)
+  HTTP 401/403 (Auth)
   HTTP 404 (Not Found)
   HTTP 429 (Too Many Requests)
 ```
 
-### 4.3 Circuit Breaker (por tribunal)
+### 4.4 Circuit Breaker (por tribunal + por app)
 
 ```
+Por tribunal:   TJSP tem seu próprio breaker
+Por app:        App A não afeta App B
+
 FECHADO ──5 falhas consecutivas──▶ ABERTO
   ▲                                   │
   │                                   │
   └──3 sucessos seguidos── MEIO-ABERTO◀──30 segundos
 ```
 
-### 4.4 Cache Strategy
+### 4.5 Cache Strategy
 
 ```
-Cache Key = sha256(f"{tenant_id}:{tipo_consulta}:{tribunal}:{parametros_normalizados}")
+Chave: "cache:{produto}:{namespace}:{tipo}:{parametros_hash}"
+Namespace por API Key / App (isolamento entre clientes)
 
-Namespace: cada tenant (escritório) tem cache isolado
-
-TTL por tipo:
-  Processo:     1h (dados estáveis)
-  Movimentação: 30min (muda com frequência)
-  Partes:       2h (raramente muda)
-  CNPJ:         24h (dados cadastrais)
-  CEP:          48h (muito estável)
-
-Invalidação manual:
-  Por tribunal, processo, ou tenant
+TTL:
+  Processo (completo):      30min
+  Movimentações:            15min
+  Partes:                   2h
+  CNPJ:                     24h
+  CEP:                      48h
+  Resultados NLP:           N/A (não cachear)
+  Classificação/Sumário:    1h (se mesmo input)
 ```
 
-### 4.5 Rate Limiting (por plano)
+### 4.6 Rate Limiting (por API Key)
 
 ```
-Básico:      10 req/min,   500 req/dia
-Profissional: 60 req/min,  3000 req/dia
-Enterprise:  300 req/min, 50000 req/dia
+Plano Free:
+  JUD:   10 req/min,   500 req/dia
+  EMP:   30 req/min,  1000 req/dia
+  NLP:   5 req/min,    100 req/dia
 
-Implementação: sliding window no Redis
+Plano Pro:
+  JUD:   60 req/min,  5000 req/dia
+  EMP:   120 req/min, 10000 req/dia
+  NLP:   30 req/min,  1000 req/dia
+  SCORE: 10 req/min,  500 req/dia
+
+Plano Business:
+  JUD:   300 req/min, 50000 req/dia
+  EMP:   600 req/min, 100000 req/dia
+  NLP:   120 req/min, 5000 req/dia
+  SCORE: 60 req/min,  3000 req/dia
+
+Enterprise: Sob consulta (ilimitado)
+```
+
+### 4.7 Webhooks Architecture
+
+```
+┌──────────┐    ┌──────────────┐    ┌──────────────┐
+│  DataJud │    │  JUD Service │    │ Webhook      │
+│  ES Query│───▶│  detecta     │───▶│ Dispatcher   │
+└──────────┘    │  mudança     │    └──────┬───────┘
+                └──────────────┘           │
+                                           ▼
+                                    ┌──────────────┐
+                                    │  Redis Queue  │
+                                    │  (retry 3x)   │
+                                    └──────┬───────┘
+                                           │
+                                           ▼
+                                    ┌──────────────┐
+                                    │  POST {url}   │
+                                    │  do cliente   │
+                                    └──────────────┘
+
+Tentativas de entrega: 0s, 60s, 300s (3x)
+Se todas falharem: marcar webhook como "erro" + log
 ```
 
 ---
@@ -473,52 +638,39 @@ Implementação: sliding window no Redis
 
 **Federais (6):**
 
-| Código | Nome | Índice ES | Abrangência |
-|--------|------|-----------|-------------|
-| TRF1 | TRF 1ª Região | `api_publica_trf1` | AC, AM, AP, BA, DF, GO, MA, MG, MT, PA, PI, RO, RR, TO |
-| TRF2 | TRF 2ª Região | `api_publica_trf2` | ES, RJ |
-| TRF3 | TRF 3ª Região | `api_publica_trf3` | MS, SP |
-| TRF4 | TRF 4ª Região | `api_publica_trf4` | PR, RS, SC |
-| TRF5 | TRF 5ª Região | `api_publica_trf5` | AL, CE, PB, PE, RN, SE |
-| TRF6 | TRF 6ª Região | `api_publica_trf6` | MG |
+| Código | Índice ES | Abrangência |
+|--------|-----------|-------------|
+| TRF1 | `api_publica_trf1` | AC, AM, AP, BA, DF, GO, MA, MG, MT, PA, PI, RO, RR, TO |
+| TRF2 | `api_publica_trf2` | ES, RJ |
+| TRF3 | `api_publica_trf3` | MS, SP |
+| TRF4 | `api_publica_trf4` | PR, RS, SC |
+| TRF5 | `api_publica_trf5` | AL, CE, PB, PE, RN, SE |
+| TRF6 | `api_publica_trf6` | MG |
 
-**Estaduais (27):**
-
-| Código | UF | Índice ES |
-|--------|:--:|-----------|
-| TJAC | AC | `api_publica_tjac` |
-| TJAL | AL | `api_publica_tjal` |
-| TJAP | AP | `api_publica_tjap` |
-| TJAM | AM | `api_publica_tjam` |
-| TJBA | BA | `api_publica_tjba` |
-| TJCE | CE | `api_publica_tjce` |
-| TJDFT | DF | `api_publica_tjdft` |
-| TJES | ES | `api_publica_tjes` |
-| TJGO | GO | `api_publica_tjgo` |
-| TJMA | MA | `api_publica_tjma` |
-| TJMT | MT | `api_publica_tjmt` |
-| TJMS | MS | `api_publica_tjms` |
-| TJMG | MG | `api_publica_tjmg` |
-| TJPA | PA | `api_publica_tjpa` |
-| TJPB | PB | `api_publica_tjpb` |
-| TJPR | PR | `api_publica_tjpr` |
-| TJPE | PE | `api_publica_tjpe` |
-| TJPI | PI | `api_publica_tjpi` |
-| TJRJ | RJ | `api_publica_tjrj` |
-| TJRN | RN | `api_publica_tjrn` |
-| TJRS | RS | `api_publica_tjrs` |
-| TJRO | RO | `api_publica_tjro` |
-| TJRR | RR | `api_publica_tjrr` |
-| TJSC | SC | `api_publica_tjsc` |
-| **TJSP** | **SP** | **`api_publica_tjsp`** ← maior tribunal do país |
-| TJSE | SE | `api_publica_tjse` |
-| TJTO | TO | `api_publica_tjto` |
+**Estaduais (27):** TJAC a TJTO → `api_publica_{codigo_lower}`
 
 **Trabalhistas (24):** TRT01 a TRT24 → `api_publica_trt{NN}`
 
 **Eleitorais (27):** TREAM a TRETO → `api_publica_tre{uf}`
 
-**Militares (3):** TJMSP, TJMMG, TJMRS → `api_publica_{sigla}`
+**Militares (3):** TJMSP, TJMMG, TJMRS
+
+### 5.2 Resolução de Código
+
+```
+Entrada: "TJSP", "tjsp", "TJ SP"
+  → normalizar: maiúsculas, sem espaços, sem caracteres especiais
+  → buscar no registry: TJSP → encontrado
+  → retornar índice: api_publica_tjsp
+
+Entrada: "TRT1", "TRT01"
+  → tentar formato com/sem zero → TRT01 = TRT1
+  → retornar índice: api_publica_trt01
+
+Não encontrado?
+  → tentar códigos alternativos (sem zero, com zero)
+  → erro 400: TRIBUNAL_INVALIDO
+```
 
 ---
 
@@ -536,288 +688,399 @@ TEXTO JURÍDICO BRUTO
   ▼ Normalização
   │   ├── quebras de linha → espaços
   │   ├── múltiplos espaços → simples
-  │   └── lowercasing (opcional, exceto BERT)
+  │   └── lowercasing (opcional)
   │
-  ▼ Mascaramento RegEx
-  │   ├── [url]:    http\S+ | www\S+
-  │   ├── [email]:  [^\s]+@[^\s]+
-  │   ├── [oab]:    OAB\s?[:-]?\d+\s?/?\s?[A-Z]+
-  │   ├── [data]:   \d{2}\s?\/\s?\d{2}\s?\/\s?\d{4}
+  ▼ Mascaramento RegEx (tokens)
+  │   ├── [url]:      http\S+ | www\S+
+  │   ├── [email]:    [^\s]+@[^\s]+
+  │   ├── [oab]:      OAB\s?[:-]?\d+\s?/?\s?[A-Z]+
+  │   ├── [data]:     \d{2}\s?\/\s?\d{2}\s?\/\s?\d{4}
   │   ├── [processo]: \d{15,} (15+ dígitos)
-  │   ├── [valor]:  R\s?\$\s?\d+[.,]?\d*
-  │   └── [numero]: \d+
+  │   ├── [valor]:    R\s?\$\s?\d+[.,]?\d*
+  │   └── [numero]:   \d+
   │
   ▼ Pós-processamento
   │   ├── siglas sem pontos (C.P.F → CPF)
   │   ├── plurais/gênero ((s), (a), (o))
-  │   ├── hífens junção (arquivem - se → arquivem-se)
-  │   └── espaços extras
+  │   └── hífens (arquivem - se → arquivem-se)
   │
-  ▼ TEXTO LIMPO + DICT com entidades extraídas
+  ▼ TEXTO LIMPO + Dict com entidades extraídas
 ```
 
-### 6.2 Aplicações de NLP no Contexto Jurídico
+### 6.2 Aplicações de NLP (como Produto)
 
-| Aplicação | Input | Output | Modelo |
-|-----------|-------|--------|--------|
-| Classificação de peças | Texto de petição | Tipo (inicial, contestação, sentença...) | BERTikal / Ollama |
-| Extração de entidades | Texto jurídico | Leis, valores, prazos, OAB | RegEx + Ollama |
-| Similaridade jurisprudencial | 2 ementas | Score de similaridade | Word2Vec / embeddings |
-| Busca semântica | Query em linguagem natural | Processos similares | pgvector + embeddings |
-| Sumarização | Decisão judicial longa | Resumo em 3 parágrafos | Ollama (local) |
-| Anonimização LGPD | Texto com dados pessoais | Texto anonimizado | RegEx + Ollama |
-| Geração de peças | Template + variáveis | Petição/parecer completo | LLM Cloud |
-| Análise de risco | Processo + jurisprudência | Probabilidade de êxito | LLM Cloud |
+| Produto API | Input | Output | Engine | Créditos |
+|-------------|-------|--------|--------|:--------:|
+| `POST /nlp/v1/limpar` | Texto jurídico | Texto limpo | Python + RegEx | 1 |
+| `POST /nlp/v1/anonimizar` | Texto com dados | Texto anonimizado | RegEx + Ollama | 2 |
+| `POST /nlp/v1/extrair` | Texto jurídico | Entidades (OAB, valores) | RegEx + Ollama | 2 |
+| `POST /nlp/v1/classificar` | Peça processual | Tipo da peça | BERTikal / Ollama | 3 |
+| `POST /nlp/v1/sumarizar` | Decisão/andamento | Resumo 3 parágrafos | Ollama | 3 |
+| `POST /nlp/v1/gerar` | Template + dados | Minuta de petição | Ollama + template | 5 |
 
 ### 6.3 Modelos Pré-Treinados
 
-| Modelo | Tipo | Tamanho | Acesso |
-|--------|------|:-------:|--------|
-| **BERTikal** | BERT-base (português jurídico) | 110M params | HuggingFace: `felipemaiapolo/legalnlp-bert` |
-| **Word2Vec CBOW** | Embeddings (100d) | ~200MB | Figshare + `get_premodel('wodc')` |
-| **Word2Vec Skip-Gram** | Embeddings (100d) | ~200MB | Figshare + `get_premodel('wodc')` |
-| **FastText CBOW** | Embeddings sub-word (100d) | ~200MB | Figshare + `get_premodel('fasttext')` |
-| **FastText SG** | Embeddings sub-word (100d) | ~200MB | Figshare + `get_premodel('fasttext')` |
+| Modelo | Tipo | Params | Acesso |
+|--------|------|:------:|--------|
+| **BERTikal** | BERT-base jurídico português | 110M | HuggingFace: `felipemaiapolo/legalnlp-bert` |
+| **Word2Vec CBOW/SG** | Embeddings (100d) | ~200MB | Figshare + `get_premodel('wodc')` |
+| **FastText CBOW/SG** | Embeddings sub-word (100d) | ~200MB | Figshare + `get_premodel('fasttext')` |
 | **Phraser** | Detecção de bigramas | ~5MB | Figshare + `get_premodel('phraser')` |
-| **NeuralMind BERT** | BERT-base português (não jurídico) | 110M params | NeuralMind AWS S3 |
-| **qwen2.5-coder:7b** | LLM generalista | 4.7GB | Ollama local |
+| **qwen2.5-coder:7b** | LLM generalista | 7B | Ollama local |
+| **NeuralMind BERT** | BERT-base português geral | 110M | NeuralMind AWS S3 |
 
-### 6.4 Instalação (LegalNLP)
+### 6.4 Anonimização LGPD (Camada Obrigatória)
+
+```
+Antes de qualquer processamento por LLM externa:
+
+1. Rodar pipeline LegalNLP de mascaramento
+2. Substituir:
+   ├── CPF:     ***.000.000-**
+   ├── CNPJ:    **.000.000/****-**
+   ├── Nome:    "[PARTE_AUTORA]" / "[PARTE_REU]"
+   ├── OAB:     "[OAB]"
+   ├── Endereço: "[ENDEREÇO]"
+   ├── Telefone: "[TELEFONE]"
+   └── Email:   "[EMAIL]"
+3. Apenas texto anonimizado vai para LLM externo
+4. Ollama local processa dados reais (não sai da máquina)
+```
+
+### 6.5 Instalação LegalNLP
 
 ```bash
 pip install legalnlp
 
-# Uso básico
-from legalnlp.clean_functions import clean, clean_bert
+from legalnlp.clean_functions import clean
 
-texto = "O autor, CPF 000.000.000-00, propõe ação..."
-texto_limpo = clean(texto, lower=True, return_masked=True)
-# → {'txt': 'o autor [documento] propoe acao ...',
-#    'oab': [], 'data': [], 'processo': [],
-#    'valor': [], 'numero': ['000', '000', '000', '00']}
+texto = "O autor, CPF 000.000.000-00, propõe..."
+result = clean(texto, lower=True, return_masked=True)
+# {'txt': 'o autor [documento] propoe ...',
+#  'oab': [], 'data': [], 'processo': [],
+#  'valor': [], 'numero': ['000','000','000','00']}
 ```
 
 ---
 
 ## 7. Boas Práticas e Padrões
 
-### 7.1 Padrões de Projeto
+### 7.1 Padrões de Projeto (PaaS Context)
 
-| Padrão | Quando usar | Exemplo |
-|--------|-------------|---------|
-| **Proxy** | Quando precisa de uma fachada pra API externa | BrasilAPI → minhareceita.org |
-| **Proxy com Fallback** | Quando há múltiplas fontes concorrentes | CEP: OpenCEP → cep-promise |
-| **Circuit Breaker** | Serviço externo instável | DataJud por tribunal |
-| **Retry com Backoff** | Falhas transitórias esperadas | Timeout de conexão |
-| **Cache-Aside** | Dados que mudam pouco | CNPJ, CEP, dados de processo |
-| **Rate Limiter** | Proteger backend de abuso | Plano Básico: 10 req/min |
-| **Strangler Fig** | Migração gradual de API legada | V1 → V2 endpoints |
-| **Ambassador** | Sidecar para tratar comunicação externa | Middleware de cache + retry |
+| Padrão | Quando usar | Exemplo JUS |
+|--------|-------------|-------------|
+| **Proxy API Gateway** | Ponto único de entrada | Gateway com auth + rate limit + cache |
+| **Backend for Frontend** | Múltiplos tipos de cliente | SDK JavaScript vs API REST |
+| **Circuit Breaker** | Serviço upstream instável | DataJud por tribunal |
+| **Retry com Backoff** | Falhas transitórias | DataJud timeout |
+| **Cache-Aside** | Dados pouco voláteis | CNPJ, CEP, dados de processo |
+| **Strangler Fig** | Migração de versão de API | JUD v1 → v2 |
+| **Event Sourcing** | Audit trail de requisições | Usage records |
+| **Queue-Based Load Leveling** | Webhook delivery | Redis Queue + retry |
+| **Valet Key** | Acesso temporário a recursos | API Keys com scopes |
 
 ### 7.2 Padrão de Handler (FastAPI)
 
 ```python
-# Estrutura padrão para cada endpoint
-# 1. Router com prefixo
-# 2. Validar entrada (Pydantic)
+# Todo endpoint PaaS deve:
+# 1. Usar dependências de autenticação
+# 2. Validar entrada com Pydantic
 # 3. Verificar cache
-# 4. Executar serviço
-# 5. Tratar erros específicos
+# 4. Executar com circuit breaker
+# 5. Registrar consumo
 # 6. Retornar resposta padronizada
-# 7. Atualizar cache
 
 @router.get("/{tribunal}/{processo}")
 async def consultar_processo(
-    tribunal: str,
-    processo: str,
-    request: Request
+    tribunal: str = Path(...),
+    processo: str = Path(...),
+    app: App = Depends(get_current_app),  # Auth + quota check
+    cache: Cache = Depends(get_cache)
 ):
-    # Validar formato do processo
+    # Validar
     if not validar_numero_unico(processo):
-        raise BadRequest("Formato de processo inválido")
+        raise HTTPException(400, detail={
+            "code": "NUMERO_PROCESSO_INVALIDO",
+            "message": "Formato deve ser NNNNNNN-DD.AAAA.T.RRRR.NNNNN"
+        })
 
-    # Verificar cache
-    cache_key = gerar_cache_key("processo", tribunal, processo)
+    # Cache
+    cache_key = f"processo:{app.id}:{tribunal}:{processo}"
     if cached := await cache.get(cache_key):
-        return cached
+        return Response(data=cached, cached=True)
 
-    # Executar com proteções
+    # Executar
     async with circuit_breaker(tribunal):
-        resultado = await datajud_service.consultar_processo(
+        resultado = await jud_service.consultar_processo(
             tribunal=tribunal,
             processo=processo
         )
 
-    # Atualizar cache
-    await cache.set(cache_key, resultado, ttl=3600)
+    # Cache + Usage
+    await cache.set(cache_key, resultado, ttl=1800)
+    await usage.record(app.id, "jud", "processo", credits=1)
 
-    return resultado
+    return Response(data=resultado, cached=False)
 ```
 
 ### 7.3 Tratamento de Erros Padronizado
 
 ```json
 {
-  "erro": {
-    "codigo": "TRIBUNAL_INVALIDO",
-    "mensagem": "Código de tribunal não reconhecido",
-    "detalhes": {
+  "success": false,
+  "error": {
+    "code": "TRIBUNAL_INVALIDO",
+    "message": "Código de tribunal não reconhecido",
+    "details": {
       "tribunal_informado": "TJXX",
-      "tribunais_disponiveis": ["TJSP", "TJRJ", "TJMG", "..."]
-    },
-    "solicitacao_id": "uuid"
+      "tribunais_disponiveis": ["TJSP", "TJRJ", "TJMG", "..."],
+      "docs_url": "https://docs.jusplatform.com/jud/v1/tribunais"
+    }
+  },
+  "meta": {
+    "request_id": "uuid",
+    "processing_time_ms": 2,
+    "credits_used": 0,
+    "credits_remaining": 499
   }
 }
 
-Códigos de erro comuns:
-├── PARAMETRO_INVALIDO    → 400
-├── TRIBUNAL_INVALIDO     → 400
-├── PROCESSO_NAO_ENCONTRADO → 404
-├── RATE_LIMIT_EXCEDIDO   → 429
-├── CIRCUIT_BREAKER_ABERTO → 503
-├── FONTE_EXTERNA_INDISPONIVEL → 502
-└── TIMEOUT              → 504
+Códigos de erro:
+├── API_KEY_INVALIDA         → 401
+├── API_KEY_EXPIRADA         → 401
+├── PLANO_SEM_ACESSO         → 403 (produto não disponível no plano)
+├── PARAMETRO_INVALIDO       → 400
+├── TRIBUNAL_INVALIDO        → 400
+├── NUMERO_PROCESSO_INVALIDO → 400
+├── PROCESSO_NAO_ENCONTRADO  → 404
+├── RATE_LIMIT_EXCEDIDO      → 429
+├── QUOTA_DIARIA_EXCEDIDA    → 429
+├── CIRCUIT_BREAKER_ABERTO   → 503
+├── FONTE_EXTERNA_INDISP    → 502
+├── TIMEOUT                  → 504
+└── ERRO_INTERNO             → 500
 ```
 
-### 7.4 Padrão de Testes
+### 7.4 Padrão de Testes (PaaS)
 
 ```python
-# Todo endpoint deve testar:
-# 1. Sucesso com parâmetros válidos → 200 + JSON correto
-# 2. Parâmetros inválidos → 400 + mensagem de erro
-# 3. Dado não encontrado → 404
-# 4. CORS funcionando → headers corretos
-# 5. Cache funcionando → segunda chamada mais rápida
+# Testar como se fosse um consumidor real da API:
+# 1. Com API Key válida → 200 + dados
+# 2. Sem API Key → 401
+# 3. Com API Key inválida → 401
+# 4. Com quota excedida → 429
+# 5. Com parâmetros inválidos → 400
+# 6. CORS headers corretos
+# 7. Rate limit: N requisições em 1 minuto
+# 8. Cache: segunda chamada mais rápida
 ```
 
 ---
 
 ## 8. Stack Recomendada
 
-### 8.1 Tecnologias
+### 8.1 Componentes
 
 | Finalidade | Tecnologia | Versão | Custo |
 |-----------|-----------|:------:|:-----:|
-| API | FastAPI + Python | 3.11+ | $0 |
+| API Gateway | FastAPI + Python | 3.11+ | $0 |
 | Cache | Redis | 7 | Variável |
-| Filas | RQ / Celery | - | $0 |
-| Vetores | pgvector (PostgreSQL) | 15+ | $0 |
-| IA Local | Ollama | última | $0 |
+| Filas | RQ / Redis Queue | - | $0 |
+| Banco | PostgreSQL + pgvector | 15+ | Variável |
+| IA Local | Ollama | latest | $0 |
 | Monitoria | Prometheus + Grafana | - | $0 |
-| Deploy | Vercel / Railway | - | Free tier |
+| Deploy | Railway / Fly.io | - | Free tier |
+| Error Tracking | Sentry | - | Free tier |
+| Billing | Stripe / Asaas | - | Taxa |
+| Docs | OpenAPI + Stoplight | - | $0 |
+| Worker | Celery / RQ Worker | - | $0 |
 | Search | Elasticsearch | 8 | Variável |
-| Observabilidade | Sentry | - | Free tier |
 
-### 8.2 Framework de IA (Shellz / Hermes)
-
-```
-S1 (Ollama, $0):       95% das tarefas
-  - sumarização, classificação, extração
-  - anonimização LGPD
-  - validação de dados
-
-S3 (DeepSeek, $0.15/M): 5% das tarefas
-  - jurimetria complexa
-  - geração de documentos
-  - análise preditiva
-```
-
----
-
-## 9. Features Sugeridas
-
-### 9.1 Features Imediatas (NowPro +)
-
-| Feature | Descrição | Dados Necessários | API |
-|---------|-----------|-------------------|:---:|
-| **Busca Unificada** | CPF/CNPJ → dados empresa + processos + score | BrasilAPI + DataJud | 📡 |
-| **Alertas de Movimentação** | Notificação quando houver nova movimentação | DataJud + Webhook | 📡 |
-| **Anonimizador Automático** | Mascarar dados sensíveis em documentos jurídicos | LegalNLP | 🤖 |
-| **Classificador de Peças** | Detectar tipo de peça processual automaticamente | LegalNLP + Ollama | 🤖 |
-| **Calculadora de Prazos** | Dias úteis, suspensão, feriados | BrasilAPI (feriados) | 📡 |
-
-### 9.2 Features Estratégicas (6 meses)
-
-| Feature | Descrição | APIs Necessárias |
-|---------|-----------|:----------------:|
-| **Jurimetria Automática** | Probabilidade de êxito por tribunal/classe/assunto | DataJud + Ollama |
-| **Relatório de Risco** | Score de risco processual completo | DataJud + BrasilAPI + Ollama |
-| **Busca Semântica** | Encontrar processos similares por embedding | pgvector + embeddings |
-| **Geração de Peças** | Minuta automática de petições | Ollama + templates |
-| **Dashboard Executivo** | KPIs do escritório em tempo real | DataJud + métricas |
-| **MCP Bot** | Interface conversacional WhatsApp/Telegram | MCP + Notification |
-
-### 9.3 Conexões entre Domínios
+### 8.2 AI Framework
 
 ```
-CPF da parte
-  → BrasilAPI: dados cadastrais (nome, situação)
-  → DataJud: processos como autor/réu
-  → LegalNLP: anonimizar
-  → Ollama: sumarizar perfil processual
-  → Relatório: "score jurídico" da pessoa
+S1 (Ollama, $0):            95% das tarefas
+  ├── Sumarização
+  ├── Classificação
+  ├── Extração de entidades
+  ├── Anonimização LGPD
+  └── Validação
 
-CNPJ da empresa
-  → BrasilAPI: razão social, sócios, CNAE, porte
-  → DataJud: processos trabalhistas, fiscais, cíveis
-  → Ollama: classificar risco trabalhista
-  → Relatório: Due diligence resumida
-
-Número de processo
-  → DataJud: andamentos, movimentações, valor, partes
-  → LegalNLP: extrair prazos, OAB, valores
-  → Ollama: prever próximas movimentações
-  → Alerta automático: "prazo de 15 dias para contestação"
+S3 (DeepSeek Flash, $0.15/M):  5% das tarefas
+  ├── Jurimetria complexa
+  ├── Geração de documentos
+  ├── Análise preditiva
+  └── Query rewriting
 ```
 
 ---
 
-## 10. Referências e Fontes
+## 9. Features e Produtos
 
-### 10.1 Documentação Oficial
+### 9.1 Produtos da Plataforma
+
+```
+JUS PLATFORM
+│
+├── 🏛️ JUD — Dados Processuais
+│   ├── Consulta de processos
+│   ├── Monitoramento de movimentações
+│   ├── Busca por parte (CPF/CNPJ/nome)
+│   └── Webhooks de eventos
+│
+├── 🏢 EMP — Dados Corporativos
+│   ├── Consulta CNPJ
+│   ├── Quadro societário
+│   ├── CEP
+│   └── Enriquecimento de dados
+│
+├── 🤖 NLP — Inteligência Jurídica
+│   ├── Limpeza e normalização
+│   ├── Anonimização LGPD
+│   ├── Extração de entidades
+│   ├── Classificação de peças
+│   ├── Sumarização
+│   └── Geração de minutas
+│
+└── 📊 SCORE — Análise Preditiva
+    ├── Risco processual
+    ├── Similaridade jurisprudencial
+    ├── Jurimetria
+    └── Predição de resultados
+```
+
+### 9.2 Conexões entre Produtos (Cross-Sell)
+
+```
+🏛️ JUD + 🏢 EMP:
+  Consultar processo → extrair CNPJ das partes
+  → EMP: enriquecer com dados cadastrais
+  → Relatório: "Empresa X é réu em 3 processos trabalhistas"
+
+🏛️ JUD + 🤖 NLP:
+  Consultar processo → baixar últimas movimentações
+  → NLP: sumarizar andamento
+  → NLP: classificar risco
+  → Relatório: "Processo em fase de execução, valor R$ 50k"
+
+🏛️ JUD + 📊 SCORE:
+  Consultar processo → buscar jurisprudência similar
+  → SCORE: prever resultado com base em casos análogos
+  → Relatório: "83% de chance de êxito baseado em 142 casos similares"
+
+🏛️ JUD + Webhook:
+  Monitorar processo → detectar nova movimentação
+  → Webhook: notificar sistema do cliente
+  → Ação: disparar análise automática
+```
+
+### 9.3 Roadmap de Produtos
+
+| Fase | Produto | Prazo | Complexidade |
+|:----:|---------|:-----:|:------------:|
+| **MVP** | JUD v1 (consulta processo + movimentações) | 4 semanas | Média |
+| **MVP** | EMP v1 (CNPJ + CEP via BrasilAPI) | 2 semanas | Baixa |
+| **v1.0** | NLP v1 (limpeza + anonimização) | 3 semanas | Média |
+| **v1.5** | JUD v2 (busca por CPF/CNPJ) | 3 semanas | Alta |
+| **v2.0** | Webhooks + monitoramento | 4 semanas | Alta |
+| **v2.5** | NLP v2 (classificação + sumarização) | 6 semanas | Alta |
+| **v3.0** | SCORE v1 (jurimetria + predição) | 8 semanas | Muito alta |
+| **v3.5** | Developer Hub + SDKs | 4 semanas | Média |
+| **v4.0** | NLP v3 (geração de peças) | 8 semanas | Muito alta |
+
+---
+
+## 10. Plano de Monetização
+
+### 10.1 Precificação (Créditos)
+
+```
+1 crédito = R$ 0,01 (1 centavo de real)
+
+Plano Free:
+  Inclusão: R$ 0/mês
+  Créditos: 100/dia (grátis)
+  Produtos: JUD (consulta), EMP (CNPJ)
+  Limites: 10 req/min, sem webhooks
+
+Plano Pro:
+  Inclusão: R$ 49/mês
+  Créditos Inclusos: 5.000/mês
+  Créditos Adicionais: R$ 0,005/crédito
+  Produtos: JUD + EMP + NLP (limpeza + anonimização)
+  Limites: 60 req/min, webhooks (5)
+
+Plano Business:
+  Inclusão: R$ 199/mês
+  Créditos Inclusos: 25.000/mês
+  Créditos Adicionais: R$ 0,003/crédito
+  Produtos: JUD + EMP + NLP (completo) + SCORE (básico)
+  Limites: 300 req/min, webhooks (20)
+
+Plano Enterprise:
+  Inclusão: Sob consulta
+  Créditos Inclusos: Ilimitados
+  Produtos: Tudo
+  Limites: Ilimitado, SLA 99.9%, suporte dedicado
+```
+
+### 10.2 Tabela de Créditos por Endpoint
+
+| Endpoint | Créditos | Custo estimado |
+|----------|:--------:|:--------------:|
+| `GET /jud/v1/processos/{numero}` | 1 | R$ 0,01 |
+| `GET /jud/v1/busca?documento={cpf}` | 2 | R$ 0,02 |
+| `POST /nlp/v1/sumarizar` | 3 | R$ 0,03 |
+| `POST /nlp/v1/gerar` | 5 | R$ 0,05 |
+| `GET /score/v1/jurimetria/{tribunal}` | 10 | R$ 0,10 |
+
+---
+
+## 11. Referências e Fontes
+
+### 11.1 Documentação Oficial
 
 | Fonte | URL | Descrição |
 |-------|-----|-----------|
 | CNJ DataJud | `https://www.cnj.jus.br/sistemas/datajud/` | Portal oficial do DataJud |
-| CNJ Tabelas Processuais | `https://www.cnj.jus.br/programas-e-acoes/tabela-processuais-unificadas/` | TPU (classes, assuntos, movimentos) |
+| CNJ Tabelas Processuais | `https://www.cnj.jus.br/programas-e-acoes/tabela-processuais-unificadas/` | TPU |
 | BrasilAPI | `https://brasilapi.com.br/docs` | Documentação OpenAPI |
-| Dados Abertos RFB | `https://dados.gov.br/dados/conjuntos-dados/cnpj` | Dump CNPJ Receita Federal |
+| Dados Abertos RFB | `https://dados.gov.br/dados/conjuntos-dados/cnpj` | Dump CNPJ |
 
-### 10.2 Repositórios (MIT License ✅)
+### 11.2 Repositórios (MIT License ✅)
 
 | Repo | ⭐ | Descrição |
 |------|:--:|-----------|
 | `BrasilAPI/BrasilAPI` | 10.8K | Agregador APIs públicas BR |
-| `felipemaiapolo/legalnlp` | 191 | NLP para linguagem jurídica BR |
-| `affaan-m/ECC` | 211.9K | Agent Harness OS (padrões de hooks e agentes) |
+| `felipemaiapolo/legalnlp` | 191 | NLP linguagem jurídica BR |
+| `affaan-m/ECC` | 211.9K | Agent Harness OS (padrões agentes) |
 
-### 10.3 Artigos e Pesquisas
+### 11.3 Papers
 
 ```
 Polo et al. "LegalNLP - Natural Language Processing Methods
-for the Brazilian Legal Language." ENIAC, 2021.
-arXiv: 2110.15709
+for the Brazilian Legal Language." ENIAC, 2021. arXiv: 2110.15709
 
 CNJ. "DataJud - Base Nacional de Dados Judiciais."
 Resolução CNJ nº 316/2020.
-
-ABJ (Associação Brasileira de Jurimetria).
-Pesquisas e dados abertos sobre o Poder Judiciário.
 ```
 
-### 10.4 Instalações Úteis
+### 11.4 Stack Pessoal (Guilherme Crepaldi)
 
 ```bash
-# LegalNLP
+# Ollama
+ollama pull qwen2.5-coder:7b
+ollama pull llama3.1:8b
+ollama pull gemma3
+
+# Python
 pip install legalnlp
 
-# Ollama (modelos jurídicos)
-ollama pull qwen2.5-coder:7b    # Geral
-ollama pull llama3.1:8b          # Alternativa
-ollama pull gemma3               # Google
-
-# pgvector (PostgreSQL)
+# PostgreSQL
 # CREATE EXTENSION vector;
+
+# FastAPI + Redis
+pip install fastapi uvicorn redis httpx
 ```
 
 ---
@@ -828,5 +1091,5 @@ ollama pull gemma3               # Google
 > Tudo é 100% original e livre para uso comercial.
 
 > **Última atualização**: Julho de 2026
-> **Autor**: Neo Hermes (guilhermecrepaldi)
+> **Arquitetura**: Platform as a Service (PaaS) — API-first, multi-tenant
 > **Repositório**: `guilhermecrepaldi/neo-hermes/specs/`
