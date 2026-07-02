@@ -1,0 +1,249 @@
+#!/usr/bin/env bash
+# ============================================================
+# headroom — CLI toggle para Headroom Cache Proxy
+# Uso: headroom [on|off|status|stats|clear]
+# ============================================================
+set -euo pipefail
+
+HEADROOM_DIR="/c/Users/Home/neo-hermes"
+PROXY_SCRIPT="$HEADROOM_DIR/headroom_cache.py"
+HERMES_ENV="/c/Users/Home/AppData/Local/hermes/.env"
+CACHE_DIR="$HOME/.hermes/headroom_cache"
+PIDFILE="/tmp/headroom.pid"
+PORT=8787
+PROXY_URL="http://127.0.0.1:$PORT/v1"
+
+# ── helpers ──────────────────────────────────────────────
+log()   { echo -e "  $1"; }
+ok()    { echo -e "  ✅ $1"; }
+err()   { echo -e "  ❌ $1"; }
+warn()  { echo -e "  ⚠️  $1"; }
+info()  { echo -e "  ℹ️  $1"; }
+
+# ── check_port: testa se o proxy está respondendo ───────
+check_proxy() {
+    curl -sf "$PROXY_URL/models" > /dev/null 2>&1
+}
+
+# ── find_proxy_pids: encontra PIDs do headroom ──────────
+find_proxy_pids() {
+    # Procura por processos python rodando headroom_cache.py
+    tasklist.exe 2>/dev/null | grep -i python | awk '{print $2}' | while read pid; do
+        # Verifica se o processo tem nosso script
+        wmic process where "ProcessId=$pid" get CommandLine 2>/dev/null | grep -q headroom_cache && echo "$pid"
+    done 2>/dev/null
+    # Fallback: PID file
+    if [ -f "$PIDFILE" ]; then
+        cat "$PIDFILE"
+    fi
+}
+
+# ── status ─────────────────────────────────────────────
+cmd_status() {
+    echo "🧠 Headroom Status"
+    echo "━━━━━━━━━━━━━━━━━"
+
+    if check_proxy; then
+        ok "Proxy respondendo em $PROXY_URL"
+        # Mostra métricas do health
+        health=$(curl -sf http://127.0.0.1:$PORT/health 2>/dev/null || echo "{}")
+        uptime=$(echo "$health" | python -c "import sys,json; d=json.load(sys.stdin); print(f'{d.get(\"uptime\",0):.0f}s')" 2>/dev/null || echo "?")
+        info "Uptime: $uptime"
+    else
+        err "Proxy NÃO está rodando"
+    fi
+
+    # Config atual
+    base_url=$(hermes config show 2>/dev/null | grep -i base_url | head -1 | awk '{print $NF}')
+    if echo "$base_url" | grep -q "127.0.0.1:8787"; then
+        ok "Hermes configurado para usar HEADROOM (base_url=$base_url)"
+    else
+        info "Hermes configurado para API DIRETA (base_url=$base_url)"
+    fi
+
+    # Cache stats
+    if [ -f "$CACHE_DIR/cache.db" ]; then
+        python -c "
+import sqlite3, os
+db = os.path.expanduser('$CACHE_DIR/cache.db')
+if os.path.exists(db):
+    conn = sqlite3.connect(db)
+    row = conn.execute('SELECT COUNT(*), COALESCE(SUM(hits),0), COALESCE(SUM(tokens),0) FROM cache').fetchone()
+    conn.close()
+    print(f'  📊 Cache: {row[0]} entradas, {row[1]} hits, ~{row[2]} tokens economizados')
+" 2>/dev/null || warn "Cache stats indisponíveis"
+    fi
+}
+
+# ── on: liga o proxy ──────────────────────────────────
+cmd_on() {
+    echo "🧠 Headroom — LIGANDO"
+
+    # Verifica API key
+    if ! grep -q "DEEPSEEK_API_KEY" "$HERMES_ENV" 2>/dev/null; then
+        err "DEEPSEEK_API_KEY não encontrada em $HERMES_ENV"
+        exit 1
+    fi
+
+    # Já está rodando?
+    if check_proxy; then
+        ok "Proxy já está rodando!"
+    else
+        # Verifica se a porta está ocupada por outro processo
+        if netstat -an 2>/dev/null | grep -q ":$PORT "; then
+            warn "Porta $PORT ocupada. Tentando matar processo anterior..."
+            cmd_off
+        fi
+
+        # Sobe o proxy em background
+        info "Iniciando proxy na porta $PORT..."
+        python "$PROXY_SCRIPT" --port "$PORT" &
+        PROXY_PID=$!
+        echo "$PROXY_PID" > "$PIDFILE"
+
+        # Aguarda ficar pronto
+        for i in $(seq 1 10); do
+            if check_proxy; then
+                ok "Proxy rodando (PID $PROXY_PID)"
+                break
+            fi
+            sleep 1
+        done
+
+        if ! check_proxy; then
+            err "Proxy não respondeu após 10s. Verifique os logs."
+            exit 1
+        fi
+    fi
+
+    # Redireciona Hermes para o proxy
+    info "Redirecionando Hermes para Headroom..."
+    hermes config set model.base_url "http://127.0.0.1:$PORT/v1"
+    ok "Hermes → Headroom Cache (127.0.0.1:$PORT/v1)"
+
+    echo ""
+    echo "  💡 Agora todas as chamadas passam pelo cache."
+    echo "  🔒 Se cair luz/reiniciar, Hermes volta automático pra API direta."
+    echo "  Uso: 'headroom off' para desligar."
+}
+
+# ── off: desliga o proxy ──────────────────────────────
+cmd_off() {
+    echo "🧠 Headroom — DESLIGANDO"
+
+    # Volta Hermes para API direta
+    info "Revertendo Hermes para API direta..."
+    hermes config set model.base_url ""
+    ok "Hermes → DeepSeek API direta"
+
+    # Mata o proxy
+    local killed=false
+    if [ -f "$PIDFILE" ]; then
+        pid=$(cat "$PIDFILE")
+        if kill "$pid" 2>/dev/null; then
+            ok "Proxy (PID $pid) desligado"
+            killed=true
+        fi
+        rm -f "$PIDFILE"
+    fi
+
+    # Varredura adicional
+    if ! $killed; then
+        # Tenta matar por nome
+        pids=$(find_proxy_pids)
+        if [ -n "$pids" ]; then
+            for pid in $pids; do
+                kill "$pid" 2>/dev/null && ok "Proxy residual (PID $pid) desligado"
+            done
+        else
+            warn "Nenhum processo proxy encontrado para matar."
+        fi
+    fi
+
+    echo ""
+    echo "  ✅ Headroom desligado. Hermes usando API direta."
+    echo "  Uso: 'headroom on' para religar."
+}
+
+# ── stats: métricas do cache ──────────────────────────
+cmd_stats() {
+    echo "📊 Headroom Cache Stats"
+    echo "━━━━━━━━━━━━━━━━━━━━━━"
+
+    if [ ! -f "$CACHE_DIR/cache.db" ]; then
+        info "Cache vazio (ainda sem dados)"
+        return
+    fi
+
+    python -c "
+import sqlite3, os, json, time
+db = os.path.expanduser('$CACHE_DIR/cache.db')
+if not os.path.exists(db):
+    print('  📭 Cache vazio')
+    exit()
+conn = sqlite3.connect(db)
+conn.row_factory = sqlite3.Row
+
+# Geral
+row = conn.execute('SELECT COUNT(*) as e, COALESCE(SUM(hits),0) as h, COALESCE(SUM(tokens),0) as t FROM cache').fetchone()
+entries = row['e']
+hits = row['h']
+tokens = row['t']
+
+# Top 10 mais acessados
+print(f'  📦 Entradas:    {entries}')
+print(f'  🎯 Hits:        {hits}')
+print(f'  💰 Tokens:      {tokens:,}')
+print(f'  💵 Economia:    ~US\${tokens/1_000_000:.4f} (régua US\$1/1M)')
+print(f'  💵 Economia:    ~US\${tokens/1_000_000*0.15:.4f} (DeepSeek real)')
+print()
+
+# Top 5
+top = conn.execute('SELECT key, hits, tokens FROM cache ORDER BY hits DESC LIMIT 5').fetchall()
+if top:
+    print('  🔥 Top 5 hits:')
+    for r in top:
+        print(f'     {r[\"hits\"]}x — key={r[\"key\"][:16]}... ({r[\"tokens\"]} tok)')
+
+conn.close()
+"
+}
+
+# ── clear: limpa o cache ──────────────────────────────
+cmd_clear() {
+    echo "🧹 Headroom — Limpando Cache..."
+    if [ -f "$CACHE_DIR/cache.db" ]; then
+        python -c "
+import sqlite3, os
+db = os.path.expanduser('$CACHE_DIR/cache.db')
+if os.path.exists(db):
+    conn = sqlite3.connect(db)
+    count = conn.execute('SELECT COUNT(*) FROM cache').fetchone()[0]
+    conn.execute('DELETE FROM cache')
+    conn.commit()
+    conn.close()
+    print(f'  🗑️  {count} entradas removidas.')
+" 2>/dev/null
+        ok "Cache limpo!"
+    else
+        warn "Cache vazio — nada a limpar."
+    fi
+}
+
+# ── Main ──────────────────────────────────────────────
+case "${1:-status}" in
+    on)      cmd_on ;;
+    off)     cmd_off ;;
+    status)  cmd_status ;;
+    stats)   cmd_stats ;;
+    clear)   cmd_clear ;;
+    *)
+        echo "Uso: headroom [on|off|status|stats|clear]"
+        echo ""
+        echo "  on       — Liga o proxy cache (porta $PORT)"
+        echo "  off      — Desliga o proxy, volta API direta"
+        echo "  status   — Mostra status atual"
+        echo "  stats    — Métricas detalhadas do cache"
+        echo "  clear    — Limpa todo o cache"
+        ;;
+esac
